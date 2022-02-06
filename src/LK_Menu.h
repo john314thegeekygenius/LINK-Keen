@@ -1,0 +1,47 @@
+
+#ifndef __LK_MENU__
+#define __LK_MENU__
+
+
+typedef enum {
+	ck_CMainMenu,
+	ck_CNewGame,
+	ck_COptions,
+	ck_CSendGame,
+	ck_CSoloGame,
+	ck_CJoinGame,
+	ck_CCharacter,
+	ck_CSetup,
+	ck_CNumPlayers,
+	ck_CNumBombs,
+	ck_CNumShots,
+	ck_CMap,
+	ck_CMusic,
+	ck_CSound,
+	ck_CControls,
+}ck_MenuNames;
+
+typedef struct ck_Folder {
+	ck_MenuNames menuName;
+	char *available;
+	char **names;
+	unsigned short menuLength;
+	struct ck_Folder *returnto;
+	struct ck_Folder *folders[];
+}ck_Folder;
+
+char *LK_US_Itoa(short v);
+
+extern uint16_t US_TextX ;
+extern uint16_t US_TextY ;
+
+void LK_US_PrintXY(char *str);
+void LK_US_TextBox(char *str);
+void CK_US_ThrowError(char *str);
+
+void LK_US_DrawControlPannel();
+void LK_US_ResetControlPannel();
+
+
+#endif
+
