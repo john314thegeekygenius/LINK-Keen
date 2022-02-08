@@ -74,15 +74,27 @@ void LK_MP_LoadMap(uint16_t mapid){
 		switch(level[(i*3)+2]){
 			case 1:
 			LK_SpawnKeen(tx<<3,(ty<<3)-24,0);
-			playerx = tx, playery = ty;
+			playerx = tx; playery = ty;
+			if(playerx2==0 && playery2==0){
+				playerx2 = tx;
+				playery2 = ty;
+			}
 			playersSpawned += 1;
+			if(GBA_SerialID == 0){
+				ck_cam_x = (tx<<3) - (GBA_SCREEN_WIDTH>>1);
+				ck_cam_y = (ty<<3) - (GBA_SCREEN_HEIGHT>>1);
+			}
 			break;
 			case 2:
 			if(ck_localGameState.multiplayerGame ){
 				if(ck_localGameState.num_players>=2){
 					LK_SpawnKeen(tx<<3,(ty<<3)-24,1);
-					playerx2 = tx, playery2 = ty;
+					playerx2 = tx; playery2 = ty;
 					playersSpawned += 1;
+					if(GBA_SerialID == 1){
+						ck_cam_x = (tx<<3) - (GBA_SCREEN_WIDTH>>1);
+						ck_cam_y = (ty<<3) - (GBA_SCREEN_HEIGHT>>1);
+					}
 				}
 			}
 			break;
@@ -90,6 +102,10 @@ void LK_MP_LoadMap(uint16_t mapid){
 			if(ck_localGameState.multiplayerGame ){
 				if(ck_localGameState.num_players>=3){
 					LK_SpawnKeen(tx<<3,(ty<<3)-24,2);
+					if(GBA_SerialID == 2){
+						ck_cam_x = (tx<<3) - (GBA_SCREEN_WIDTH>>1);
+						ck_cam_y = (ty<<3) - (GBA_SCREEN_HEIGHT>>1);
+					}
 					playersSpawned += 1;
 				}
 			}
@@ -98,6 +114,10 @@ void LK_MP_LoadMap(uint16_t mapid){
 			if(ck_localGameState.multiplayerGame ){
 				if(ck_localGameState.num_players>=4){
 					LK_SpawnKeen(tx<<3,(ty<<3)-24,3);
+					if(GBA_SerialID == 3){
+						ck_cam_x = (tx<<3) - (GBA_SCREEN_WIDTH>>1);
+						ck_cam_y = (ty<<3) - (GBA_SCREEN_HEIGHT>>1);
+					}
 					playersSpawned += 1;
 				}
 			}
@@ -124,17 +144,33 @@ void LK_MP_LoadMap(uint16_t mapid){
 			if(ck_localGameState.num_players==2){
 				// Spawn player 2 with player 1
 				LK_SpawnKeen(playerx<<3,(playery<<3)-24,1);
+				if(GBA_SerialID == 1){
+					ck_cam_x = (playerx<<3) - (GBA_SCREEN_WIDTH>>1);
+					ck_cam_y = (playery<<3) - (GBA_SCREEN_HEIGHT>>1);
+				}
 			}else{
 				if(playersSpawned==1){
 					// Spawn all players with player 1
-					for(i = 0; i < ck_localGameState.num_players; i++)
-						LK_SpawnKeen(playerx<<3,(playery<<3)-24,1+i);
+					for(i = 1; i < ck_localGameState.num_players; i++){
+						LK_SpawnKeen(playerx<<3,(playery<<3)-24,i);
+					}
+					ck_cam_x = (playerx<<3) - (GBA_SCREEN_WIDTH>>1);
+					ck_cam_y = (playery<<3) - (GBA_SCREEN_HEIGHT>>1);
+
 				}else if (playersSpawned==2){
 					// Spawn player 3 with player 1
 					LK_SpawnKeen(playerx<<3,(playery<<3)-24,2);
+					if(GBA_SerialID == 2){
+						ck_cam_x = (playerx<<3) - (GBA_SCREEN_WIDTH>>1);
+						ck_cam_y = (playery<<3) - (GBA_SCREEN_HEIGHT>>1);
+					}
 					if(ck_localGameState.num_players==4){
 						// Spawn player 4 with player 2
 						LK_SpawnKeen(playerx2<<3,(playery2<<3)-24,3);
+						if(GBA_SerialID == 3){
+							ck_cam_x = (playerx2<<3) - (GBA_SCREEN_WIDTH>>1);
+							ck_cam_y = (playery2<<3) - (GBA_SCREEN_HEIGHT>>1);
+						}
 					}
 				}
 			}
@@ -185,14 +221,35 @@ void LK_MP_UpdateCamera(){
 	short keenXloc = globalCK_X - (GBA_SCREEN_WIDTH>>1);
 	short keenYloc = globalCK_Y - (GBA_SCREEN_HEIGHT>>1);
 
-	if(globalCK_X > (18<<3)+ck_cam_x){
+	if(globalCK_X > (16<<3)+ck_cam_x){
 		ck_cam_x += 4;
 	}
-	if(globalCK_X < (8<<3)+ck_cam_x){
+	if(globalCK_X < (14<<3)+ck_cam_x){
 		ck_cam_x -= 4;
 	}
-	ck_cam_y = keenYloc;
-	
+
+	if(globalCK_Y > (16<<3)+ck_cam_y){
+		ck_cam_y += 4;
+	}
+	if(globalCK_Y < (2<<3)+ck_cam_y){
+		ck_cam_y -= 4;
+	}
+
+	if(globalCK_UpdateCam){
+		int dist = keenYloc - ck_cam_y;
+		if(dist > 12)
+			dist = 12;
+		if(ck_cam_y < keenYloc){
+			ck_cam_y += dist;
+		}
+		if(ck_cam_y > keenYloc){
+			ck_cam_y += dist;
+		}
+		globalCK_UpdateCam = false;
+	}
+
+//	ck_cam_y = globalCK_Y;
+
 	/*
 	if(ck_cam_x >= keenXloc - CK_CAM_SPEED && ck_cam_x <= keenXloc + CK_CAM_SPEED)
 		ck_cam_x = keenXloc;

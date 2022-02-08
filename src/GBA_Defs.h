@@ -545,8 +545,11 @@ void GBA_SetSoundFreq(short id, int freq);
 ////// Sample stuff
 
 
+// InvSampR = 59.6781927 / SampleR
+
 #define GBA_INVERSE_VCOUNT 0.000003561
 
+#define GBA_INV_11025 0.005412988
 #define GBA_INV_22050 0.002709921
 #define GBA_INV_44100 0.001353247
 
@@ -559,6 +562,9 @@ void GBA_SetSoundFreq(short id, int freq);
 #define GBA_CHANNEL_A 0
 #define GBA_CHANNEL_B 1
 
+// SampR = 16758000 / SampleR
+
+#define GBA_SAMP_RATE_11025   1520
 #define GBA_SAMP_RATE_22050   761
 #define GBA_SAMP_RATE_44100   380
 
@@ -675,7 +681,7 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_COM_BAUD_57600 0x02
 #define GBA_COM_BAUD_115200 0x03
 
-#define GBA_SERIAL_TIMEOUT 0x0100
+#define GBA_SERIAL_TIMEOUT 0x1000
 
 #define GBA_SI_TERMINAL 0x04 // READ ONLY
 
@@ -699,6 +705,8 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_COM_MULTI 0x2000
 #define GBA_COM_UART 0x3000
 
+// 120 = 2 Vsyncs
+#define GBA_S_MIN_WAIT 120 // The minimum amount of time needed to wait for the data to get thru
 
 extern unsigned short GBA_GameBoysConnected[4];
 extern unsigned short GBA_NGameBoysConnected;
@@ -711,7 +719,7 @@ void GBA_FindGBAs();
 short GBA_WaitSerial(void);
 void GBA_UpdateSerial(void);
 void GBA_Serial_SendWord(unsigned short word); 
-
+void GBA_ClearSerial();
 
 /*
 

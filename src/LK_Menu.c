@@ -91,6 +91,12 @@ uint16_t chr2gliph(char c){
 	if(c >= '0' && c <= '9'){
 		return 1+(c-'0');
 	}
+	if(c == '-'){
+		return 89;
+	}
+	if(c == '.'){
+		return 104;
+	}
 	return 0;
 };
 
@@ -108,14 +114,38 @@ char *LK_US_Itoa(short v){
 		return US_Itoa_String;
 	}
 	if(v<0){
-		v *= 1;
-		nlen += 1;
 		US_Itoa_String[0] = '-';
+		v = -v;
+		nlen += 1;
 	}
 	if(v>=0) nlen += 1;
 	if(v>=10) nlen += 1;
 	if(v>=100) nlen += 1;
 	if(v>=1000) nlen += 1;
+	if(v>=10000) nlen += 1;
+
+	US_Itoa_String[nlen+1] = 0;
+	nlen -= 1;
+	while(v>0){
+		US_Itoa_String[nlen--] = '0'+(v%10);
+		v /= 10;
+	}
+
+	return US_Itoa_String;
+};
+
+char *LK_US_uItoa(unsigned short v){
+	short nlen = 0;
+	if(v==0){
+		US_Itoa_String[0] = '0';
+		US_Itoa_String[1] = 0;
+		return US_Itoa_String;
+	}
+	if(v>=0) nlen += 1;
+	if(v>=10) nlen += 1;
+	if(v>=100) nlen += 1;
+	if(v>=1000) nlen += 1;
+	if(v>=10000) nlen += 1;
 
 	US_Itoa_String[nlen+1] = 0;
 	nlen -= 1;
@@ -198,13 +228,35 @@ void LK_US_TextBox(char *str){
 	LK_US_PrintXY(str);
 };
 
-void CK_US_ThrowError(char *str){
+
+void LK_US_ResetTiles(){
+	// Copy the tileset into the block
+	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)cwrist_tiles_data,(cwrist_tiles_size)>>1);
+	// Copy the tileset into the block
+	GBA_DMA_Copy16((uint16_t*)GBA_BG1_Tiles,(uint16_t*)cwrist_font_data,(cwrist_font_size)>>1);
+	// Finish the render of the background
+	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_32x32);
+};
+
+void LK_US_ThrowError(char *str){
+	int button = 0;
+	
+	GBA_ResetSprites();
+	GBA_UPDATE_SPRITES()
+
+	LK_US_ResetTiles();
+
 	// Render a cyan screen with text
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0x96,32*32);
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*32);
+	GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*32);
 	US_TextX = 15-((GBA_StrLen(str)>>1)+1); US_TextY = 8;
 	LK_US_TextBox(str);
-	while(1);
+	
+	while((~GBA_BUTTONS));
+	while(!((~GBA_BUTTONS)&GBA_BUTTON_A));
+	while(((~GBA_BUTTONS)&GBA_BUTTON_A));
+	LK_US_ResetROM();
 };
 
 
@@ -340,6 +392,7 @@ void LK_US_DrawControlPannel(){
 			ck_localGameState.num_players = 0;
 		break;
 		case ck_CCharacter:
+			ck_selectorX = ck_localGameState.player_pics[0];
 			// Show selected character
 			if(ck_DrawnCharacter==false){
 				GBA_ResetSprites();
@@ -628,6 +681,30 @@ void LK_US_DrawControlPannel(){
 
 void LK_US_ResetControlPannel(){
 	ck_ControlPannelDrawn = false;
+	ck_selectorY = 0;
+	ck_selectorX = 0;
+	ck_ControlPannelMenu = &ck_FMainMenu;
+	ck_selectorGlyph = 11;
+};
+
+void LK_US_ResetROM(){
+	int i;
+	// Get rid of any sound
+	LK_SD_StopMusic();
+	LK_SD_StopSounds();
+	
+	// Get rid of any sprites
+	
+	GBA_ResetSprites();
+	GBA_UPDATE_SPRITES()
+	
+	// Fix the menu stuff
+	LK_US_ResetControlPannel();
+	// Set the default game state
+	LK_ResetGameState();
+
+	// Try to find any GBAs connected
+	//GBA_FindGBAs();
 };
 
 

@@ -181,6 +181,7 @@ void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int 
 	if(sprId2 != lastSprID[sheetId]){
 		lastSprID[sheetId] =  sprId2;
 		GBA_DMA_MemSet32((uint16_t*)GBA_SPRGFX_START+sprOff+(32*16),0,32*3);
+		GBA_DMA_MemSet32((uint16_t*)GBA_SPRGFX_START+sprOff+(128),0,32*3);
 	}
 	GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff,data+(sprId1*32),32); // Top
 	GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(32*16),data+(sprId1*32)+(cki_playerSheetWidth<<2),32); // Middle

@@ -27,8 +27,28 @@ short ck_slopevalues[8][8] = {
 
 
 void LK_PhysCollideObj(ck_object *obj,ck_object *obj2){
-	// TODO:
-	// Populate this function
+	if(obj->type==ck_objShot){
+		if(obj->var4 != obj2->var4){
+			if(obj->accel_x != 0 || obj->accel_y != 0){
+				// Hurt the player
+				ck_localGameState.ck_health[obj2->var4] -= 40;
+				obj->accel_x = 0;
+				obj->accel_y = 0;
+			}
+		}
+	}
+
+	if(obj->type==ck_objBomb){
+		if(obj->var4 != obj2->var4){
+			if(obj->var1 == 0x41){
+				obj->var1 += 1;
+				// Hurt the player
+				ck_localGameState.ck_health[obj2->var4] -= 50;
+				obj->accel_x = 0;
+				obj->accel_y = 0;
+			}
+		}
+	}
 };
 
 
@@ -351,7 +371,7 @@ void LK_MapCollideBomb(ck_object *obj){
 
 		for(m = 0; m < (obj->clip_rects.clipH>>3); m++){
 			// Check for every slope in hitbox
-			TIclipY = m+(obj->pos_y+obj->clip_rects.clipY)>>3;
+			TIclipY = m+((obj->pos_y+obj->clip_rects.clipY)>>3);
 			
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
@@ -376,7 +396,7 @@ void LK_MapCollideBomb(ck_object *obj){
 
 		for(m = 0; m < (obj->clip_rects.clipH>>3); m++){
 			// Check for every slope in hitbox
-			TIclipY = m+(obj->pos_y+obj->clip_rects.clipY)>>3;
+			TIclipY = m+((obj->pos_y+obj->clip_rects.clipY)>>3);
 			
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
@@ -449,7 +469,7 @@ void LK_LogicBomb(ck_object *obj){
 	}
 };
 
-void LK_SpawnBomb(int x,int y, int dir_x, int dir_y){
+void LK_SpawnBomb(int x,int y, int dir_x, int dir_y, int obj_id){
 	ck_object * obj = LK_GetNewObj(0);
 
 	obj->pos_x = x;
@@ -470,6 +490,10 @@ void LK_SpawnBomb(int x,int y, int dir_x, int dir_y){
 
 	obj->var1 = obj->var2 = obj->var3 = obj->var4 = 0;
 	
+	
+	obj->var1 = 0; // bomb timer
+	obj->var4 = obj_id; // obj id
+
 	obj->clip_rects.clipX = 2;
 	obj->clip_rects.clipY = 2;
 	obj->clip_rects.clipW = 12;
@@ -636,7 +660,7 @@ void LK_MapCollideShot(ck_object *obj){
 
 		for(m = 0; m < (obj->clip_rects.clipH>>3); m++){
 			// Check for every slope in hitbox
-			TIclipY = m+(obj->pos_y+obj->clip_rects.clipY)>>3;
+			TIclipY = m+((obj->pos_y+obj->clip_rects.clipY)>>3);
 			
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
@@ -662,7 +686,7 @@ void LK_MapCollideShot(ck_object *obj){
 
 		for(m = 0; m < (obj->clip_rects.clipH>>3); m++){
 			// Check for every slope in hitbox
-			TIclipY = m+(obj->pos_y+obj->clip_rects.clipY)>>3;
+			TIclipY = m+((obj->pos_y+obj->clip_rects.clipY)>>3);
 			
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
@@ -757,7 +781,7 @@ void LK_LogicShot(ck_object *obj){
 			obj->accel_x = obj->accel_y = 0;
 			obj->animation_tick = 0;
 			obj->ck_frame = &ck_ShotSplat;
-			LK_SD_PlaySound(&CK_Sound_Shot_Hit);
+			LK_SD_PlaySound(CK_SND_SHOT_HIT);
 		}
 	}
 	if(obj->ck_frame == &ck_ShotRemove){
@@ -766,7 +790,7 @@ void LK_LogicShot(ck_object *obj){
 	}
 };
 
-void LK_SpawnShot(int x,int y, int dir_x, int dir_y){
+void LK_SpawnShot(int x,int y, int dir_x, int dir_y, int obj_id){
 	ck_object * obj = LK_GetNewObj(0);
 
 	obj->pos_x = x;
@@ -780,6 +804,9 @@ void LK_SpawnShot(int x,int y, int dir_x, int dir_y){
 	obj->type = ck_objShot;
 
 	obj->var1 = obj->var2 = obj->var3 = obj->var4 = 0;
+	
+	obj->var1 = 0; // shot timer
+	obj->var4 = obj_id; // obj id
 
 	obj->clip_rects.clipX = 2;
 	obj->clip_rects.clipY = 2;
@@ -805,7 +832,15 @@ void LK_SpawnShot(int x,int y, int dir_x, int dir_y){
 
 ck_animation 	ck_KeenStand, 
 				ck_KeenLookUp,
-				ck_KeenLookDown;
+				ck_KeenLookDown,
+				ck_KeenDie;
+				
+ck_animation 	ck_KeenHang, 
+				ck_KeenCrawl1,
+				ck_KeenCrawl2,
+				ck_KeenCrawl3,
+				ck_KeenCrawl4;
+				
 
 ck_animation 	ck_KeenWalk1, 
 				ck_KeenWalk2, 
@@ -838,6 +873,51 @@ ck_animation ck_KeenLookDown = {
 	{ {0,8} },
 	0xF0,
 	&ck_KeenLookDown
+};
+
+
+ck_animation ck_KeenDie = {
+	{CK_KEEN_DEAD},
+	{ {0,4} },
+	0xF0,
+	&ck_KeenDie
+};
+
+
+ck_animation ck_KeenHang = {
+	{CK_KEEN_LEDGE1_A, CK_KEEN_LEDGE1_B, CK_KEEN_LEDGE1_A+CK_BOTTOM_HALF+CK_BOTTOM_HALF},
+	{ {0,-4}, {0,24-4}, {0,16-4} },
+	0xF0,
+	&ck_KeenHang
+};
+
+
+ck_animation ck_KeenCrawl1 = {
+	{CK_KEEN_LEDGE2},
+	{ {0,-4} },
+	0x02,
+	&ck_KeenCrawl2
+};
+
+ck_animation ck_KeenCrawl2 = {
+	{CK_KEEN_LEDGE3},
+	{ {0,-8} },
+	0x02,
+	&ck_KeenCrawl3
+};
+
+ck_animation ck_KeenCrawl3 = {
+	{CK_KEEN_LEDGE4},
+	{ {4,-12} },
+	0x02,
+	&ck_KeenCrawl4
+};
+
+ck_animation ck_KeenCrawl4 = {
+	{CK_KEEN_LEDGE5,CK_KEEN_LEDGE5+CK_BOTTOM_HALF},
+	{ {0,0}, {0,16} },
+	0x02,
+	&ck_KeenStand
 };
 
 
@@ -1068,6 +1148,7 @@ void LK_MapCollideKeen(ck_object *obj){
 	uint16_t tileTI, TIclipX, TIclipY,TIclipY2;
 	const short mx = obj->pos_x+obj->clip_rects.clipX+(obj->clip_rects.clipW>>1);
 	int m;
+	boolean was_on_ground = ck_localGameState.on_ground[obj->var4];
 	
 	
 	// Collide with map here
@@ -1075,65 +1156,34 @@ void LK_MapCollideKeen(ck_object *obj){
 		return; // It's not keen, so forget about it!
 
 
-	// Collide Right
+	// We aren't on the ground
+	ck_localGameState.on_ground[obj->var4] = false;
 
-    if(obj->accel_x > 0){
+	// "Collide" Center
+
+    if(obj->dir_y == CK_Dir_Up){
 		
 		TIclipX = ((obj->pos_x+obj->clip_rects.clipX+obj->clip_rects.clipW+obj->accel_x)>>3);
-
-		for(m = 0; m <= (obj->clip_rects.clipH>>3); m++){
-			// Check for every slope in hitbox
-			TIclipY = m+(obj->pos_y+obj->clip_rects.clipY)>>3;
-			
-			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
-				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
-				
-				// Clip with right wall
-				if(tileTI&0x8000){
-					obj->pos_x = (TIclipX<<3)-(obj->clip_rects.clipX+obj->clip_rects.clipW+obj->accel_x);
-					obj->accel_x = 0;
-					if(obj->state == ck_objWalking)
-						obj->state = ck_objStanding;
-					break; // Get out of loop
-				}
-			}
-		}
-	}
-    
-	// Collide Left
-
-    if(obj->accel_x < 0){
+		TIclipY = 1+((obj->pos_y+obj->clip_rects.clipY)>>3);
 		
-		TIclipX = ((obj->pos_x+obj->clip_rects.clipX+obj->accel_x)>>3);
+		if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
+			uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-		for(m = 0; m <= (obj->clip_rects.clipH>>3); m++){
-			// Check for every slope in hitbox
-			TIclipY = m+(obj->pos_y+obj->clip_rects.clipY)>>3;
+			tileTI = (((*ck_tileinfo)[512+(tile*3)])>>8)&0x7F;
 			
-			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
-				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
-				
-				// Clip with left wall
-				if(tileTI&0x4000){
-					TIclipX += 1;
-					obj->pos_x = (TIclipX<<3)-(obj->clip_rects.clipX);
-					obj->accel_x = 0;
-					if(obj->state == ck_objWalking)
-						obj->state = ck_objStanding;
-					break; // Get out of loop
-				}
+			// Interact with pole
+			if(tileTI==0x01){
+				//obj->pos_x = (TIclipX<<3)-(obj->clip_rects.clipX+obj->clip_rects.clipW+obj->accel_x);
+				//obj->accel_x = 0;
+				//obj->state = ck_objClimb;
 			}
 		}
 	}
 
     // Collide Top
     if(obj->accel_y > 0){
-		
-		TIclipY = (obj->pos_y+obj->clip_rects.clipY+obj->clip_rects.clipH+obj->accel_y)>>3;
+
+		TIclipY = (obj->pos_y+obj->clip_rects.clipY+obj->clip_rects.clipH+obj->accel_y)>>3;		
 		TIclipY2 = TIclipY-1;
 
 		for(m = 0; m < 2; m++){
@@ -1151,7 +1201,7 @@ void LK_MapCollideKeen(ck_object *obj){
 					uint16_t dy = (mx&0x07);
 					obj->pos_y = (TIclipY2<<3)-(obj->clip_rects.clipH+obj->clip_rects.clipY-ck_slopevalues[tileTI-1][dy]);
 					obj->accel_y = 0;
-					ck_localGameState.on_ground = true;
+					ck_localGameState.on_ground[obj->var4] = true;
 					if(obj->state == ck_objFalling){
 						obj->state = ck_objStanding;
 					}
@@ -1171,21 +1221,34 @@ void LK_MapCollideKeen(ck_object *obj){
 				
 				// Clip with solid top
 				if(tileTI==0x01){
+					if(obj->state == ck_objStanding&&obj->dir_y == CK_Dir_Down){
+						tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+						
+						// If bottom info is fall thru,
+						if(tileTI==0x00){
+							// Clip thru the block
+							obj->pos_y = (TIclipY<<3)-(obj->clip_rects.clipH+obj->clip_rects.clipY-8);
+							obj->accel_y = 1;
+							ck_localGameState.on_ground[obj->var4] = false;
+							goto skipYCheck;
+						}
+					}
                     //uint16_t dy = (mx)&0x07;
                     obj->pos_y = (TIclipY<<3)-(obj->clip_rects.clipH+obj->clip_rects.clipY);//-ck_slopevalues[tileTI-1][dy]);
                     obj->accel_y = 0;
-    				ck_localGameState.on_ground = true;
+    				ck_localGameState.on_ground[obj->var4] = true;
 					if(obj->state == ck_objFalling){
 						obj->state = ck_objStanding;
 					}
 					break; // Get out of loop
 				}
+
 			}
 			
 		}
 
     }
-
+skipYCheck:
 
     // Collide Bottom
     if(obj->accel_y < 0){
@@ -1238,6 +1301,113 @@ void LK_MapCollideKeen(ck_object *obj){
 
     }
 
+
+	// Collide Right
+
+    if(obj->accel_x > 0){
+		
+		TIclipX = ((obj->pos_x+obj->clip_rects.clipX+obj->clip_rects.clipW+obj->accel_x)>>3);
+
+		for(m = 0; m < (obj->clip_rects.clipH>>3); m++){
+			// Check for every slope in hitbox
+			TIclipY = m+((obj->pos_y+obj->clip_rects.clipY)>>3);
+			
+			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
+				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
+
+				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				
+				// Clip with right wall
+				if(tileTI&0x8000){
+					obj->pos_x = (TIclipX<<3)-(obj->clip_rects.clipX+obj->clip_rects.clipW+1);
+					obj->accel_x = 0;
+					if(obj->state == ck_objWalking)
+						obj->state = ck_objStanding;
+									
+					// Grab hold of side
+					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground){
+						TIclipY -= 1;
+						tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
+						tileTI = (*ck_tileinfo)[512+(tile*3)];
+						
+						// If tile above is not solid
+						if(tileTI==0){
+							TIclipY += 1;
+
+							TIclipX -= 1;
+							tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
+							tileTI = (*ck_tileinfo)[512+(tile*3)];
+							TIclipX += 1;
+							// If tile to the left is not solid
+							if(tileTI==0){
+								obj->pos_x = (TIclipX<<3)-(obj->clip_rects.clipX+obj->clip_rects.clipW+1);
+								obj->pos_y = (TIclipY<<3)-(obj->clip_rects.clipY);
+								obj->accel_x = 0;
+								obj->accel_y = 0;
+								obj->state = ck_objHolding;
+								return; // Don't do anything else!
+							}
+						}
+					}
+					break; // Get out of loop
+				}
+			}
+		}
+	}
+    
+	// Collide Left
+
+    if(obj->accel_x < 0){
+		
+		TIclipX = ((obj->pos_x+obj->clip_rects.clipX+obj->accel_x-1)>>3);
+
+		for(m = 0; m < (obj->clip_rects.clipH>>3); m++){
+			// Check for every slope in hitbox
+			TIclipY = m+((obj->pos_y+obj->clip_rects.clipY)>>3);
+			
+			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
+				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
+
+				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				
+				// Clip with left wall
+				if(tileTI&0x4000){
+					obj->pos_x = (TIclipX<<3)+9-(obj->clip_rects.clipX);
+					obj->accel_x = 0;
+					if(obj->state == ck_objWalking)
+						obj->state = ck_objStanding;
+
+					// Grab hold of side
+					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground){
+						TIclipY -= 1;
+						tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
+						tileTI = (*ck_tileinfo)[512+(tile*3)];
+						
+						// If tile above is not solid
+						if(tileTI==0){
+							TIclipY += 1;
+
+							TIclipX += 1;
+							tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
+							tileTI = (*ck_tileinfo)[512+(tile*3)];
+							TIclipX -= 1;
+							// If tile to the right is not solid
+							if(tileTI==0){
+								obj->pos_x = (TIclipX<<3)+9-(obj->clip_rects.clipX);
+								obj->pos_y = (TIclipY<<3)-(obj->clip_rects.clipY);
+								obj->accel_x = 0;
+								obj->accel_y = 0;
+								obj->state = ck_objHolding;
+								return; // Don't do anything else!
+							}
+						}
+					}
+					break; // Get out of loop
+				}
+			}
+		}
+	}
+
 };
 
 
@@ -1248,25 +1418,54 @@ void LK_DrawKeen(ck_object *obj){
 	short sprX = obj->ck_frame->spr_offs[0][0] + obj->pos_x - ck_cam_x;
 	short sprY = obj->ck_frame->spr_offs[0][1] + obj->pos_y - ck_cam_y;
 
+	if(obj->dir_x==CK_Dir_Left){
+		if(obj->ck_frame == &ck_KeenHang||obj->ck_frame == &ck_KeenCrawl1||obj->ck_frame == &ck_KeenCrawl2||obj->ck_frame == &ck_KeenCrawl3||obj->ck_frame == &ck_KeenCrawl4){
+			sprX -= 2+(obj->ck_frame->spr_offs[0][0]<<1);
+		}
+	}
+	if(obj->var1&0x1){
+		sprX = 0xA0; // Hide that sprite
+		sprY = 0xF0;
+	}
 	// Render the sprites
 	GBA_SET_SPRITE_POSITION(obj->spr_id1, sprX, sprY);
 	sprX = obj->ck_frame->spr_offs[1][0] + obj->pos_x - ck_cam_x;
 	sprY = obj->ck_frame->spr_offs[1][1] + obj->pos_y - ck_cam_y;
-	if(obj->ck_frame == &ck_KeenLookDown){
-		sprX = 0xF0; // Hide that sprite
-		sprY = 0xA0;
+
+	if(obj->dir_x==CK_Dir_Left){
+		if(obj->ck_frame == &ck_KeenHang||obj->ck_frame == &ck_KeenCrawl1||obj->ck_frame == &ck_KeenCrawl2||obj->ck_frame == &ck_KeenCrawl3||obj->ck_frame == &ck_KeenCrawl4){
+			sprX -= 2;
+		}
+	}
+	if(obj->ck_frame == &ck_KeenLookDown || obj->ck_frame == &ck_KeenCrawl1 || obj->ck_frame == &ck_KeenCrawl2 ||
+		obj->ck_frame == &ck_KeenCrawl3 || obj->ck_frame == &ck_KeenDie){
+		sprX = 0xA0; // Hide that sprite
+		sprY = 0xF0;
+	}
+	if(obj->var1&0x1){
+		sprX = 0xA0; // Hide that sprite
+		sprY = 0xF0;
 	}
 	GBA_SET_SPRITE_POSITION(obj->spr_id2, sprX, sprY);
 
 
-	sprX = 0xF0; // Hide the third sprite
-	sprY = 0xA0;
+	sprX = 0xA0; // Hide the third sprite
+	sprY = 0xF0;
 
 	if(obj->ck_frame == &ck_KeenShoot || obj->ck_frame == &ck_KeenJumpShoot || obj->ck_frame == &ck_KeenThrow3 || obj->ck_frame == &ck_KeenJumpThrow2 ||
-		obj->ck_frame == &ck_KeenShootUp || obj->ck_frame == &ck_KeenJumpShootUp){
+		obj->ck_frame == &ck_KeenShootUp || obj->ck_frame == &ck_KeenJumpShootUp || obj->ck_frame == &ck_KeenHang ){
 		// Extra sprite for gun
 		sprX = (obj->ck_frame->spr_offs[2][0]*obj->dir_x) + obj->pos_x - ck_cam_x;
 		sprY = obj->ck_frame->spr_offs[2][1] + obj->pos_y - ck_cam_y;
+		if(obj->dir_x==CK_Dir_Left){
+			if(obj->ck_frame == &ck_KeenHang||obj->ck_frame == &ck_KeenCrawl1||obj->ck_frame == &ck_KeenCrawl2||obj->ck_frame == &ck_KeenCrawl3||obj->ck_frame == &ck_KeenCrawl4){
+				sprX -= 2;
+			}
+		}
+	}
+	if(obj->var1&0x1){
+		sprX = 0xA0; // Hide that sprite
+		sprY = 0xF0;
 	}
 	GBA_SET_SPRITE_POSITION(obj->spr_id3, sprX, sprY);
 
@@ -1276,7 +1475,7 @@ void LK_DrawKeen(ck_object *obj){
 	GBA_SET_SPRITE_TILES(obj->spr_id2, 4+((12+(obj->var4<<1))*32));
 	GBA_SET_SPRITE_TILES(obj->spr_id3, 8+((12+(obj->var4<<1))*32));
 
-	if(obj->ck_frame == &ck_KeenJumpShootUp || obj->ck_frame == &ck_KeenShootUp ){
+	if(obj->ck_frame == &ck_KeenJumpShootUp || obj->ck_frame == &ck_KeenShootUp || obj->ck_frame == &ck_KeenHang ){
 		// Horizontal extra bit
 		LK_CA_HackPlayerSprite(obj->ck_frame->offset[0],obj->ck_frame->offset[1],obj->ck_frame->offset[2], ck_localGameState.player_pics[obj->var4],1,obj->var4);
 	}else{
@@ -1304,11 +1503,119 @@ void LK_DrawKeen(ck_object *obj){
 	}
 };
 
-void LK_LogicKeen(ck_object *obj){
 
+void LK_KillKeen(ck_object *obj){
+	if(obj->type != ck_objPlayer) return;
+	if(obj->var1) return; // We invincable!
+	if(obj->state != ck_objDead){
+		obj->state = ck_objDead;
+		ck_localGameState.ck_lives[obj->var4] -= 1;
+		obj->var2 = 0x20;
+		obj->animation_tick = 0;
+		obj->ck_frame = &ck_KeenDie;
+		obj->frozen = true;
+	}
+};
+
+void LK_LogicKeen(ck_object *obj){
+	if(obj->var1){
+		obj->var1 -= 1;
+	}
+	if(obj->var2){
+		obj->var2 -= 1;
+		if(obj->var2<=0){
+			// Respawn keen
+			if(obj->state = ck_objDead){
+				
+				// Reset some variables
+				ck_localGameState.ck_health[obj->var4] = ck_localGameState.start_health;
+				ck_localGameState.ck_shots[obj->var4] = ck_localGameState.start_shots;
+				ck_localGameState.ck_bombs[obj->var4] = ck_localGameState.start_bombs;
+				obj->frozen = false;
+				obj->animation_tick = 0;
+				obj->ck_frame = &ck_KeenStand;
+				obj->state = ck_objStanding;
+				obj->dir_y = CK_Dir_None;
+				obj->dir_x = CK_Dir_Right;
+
+				// Reset clip rect
+				obj->clip_rects.clipY = 0;
+				obj->clip_rects.clipH = 24;
+				
+				obj->pos_x = obj->spawn_x;
+				obj->pos_y = obj->spawn_y;
+				
+				if(GBA_SerialID == obj->var4){
+					ck_cam_x = obj->spawn_x - (GBA_SCREEN_WIDTH>>1);
+					ck_cam_y = obj->spawn_y - (GBA_SCREEN_HEIGHT>>1);
+				}
+				
+				obj->var1 = 0x20;
+
+			}
+		}
+	}
+	if(ck_localGameState.ck_health[obj->var4] <= 0){
+		ck_localGameState.ck_health[obj->var4] = 0;
+		LK_KillKeen(obj);
+	}
+
+	if(obj->state == ck_objHolding){
+		obj->animation_tick = 0;
+		obj->ck_frame = &ck_KeenHang;
+		obj->frozen = true;
+	}
+	
+	if(obj->ck_frame == &ck_KeenCrawl4){
+		if(obj->frozen&&obj->state==ck_objClimbing){
+			obj->pos_x += 12*obj->dir_x;
+			obj->pos_y -= 24;
+			ck_localGameState.on_ground[obj->var4] = true;
+			obj->state = ck_objStanding;
+		}
+	}
+	
+	if(obj->frozen){
+		if(obj->ck_frame==&ck_KeenStand){
+			obj->frozen = false;
+		}
+		if(obj->ck_frame==&ck_KeenHang){
+			// Do some logic here
+			if((obj->dir_x==CK_Dir_Right && (ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_RIGHT)) ||
+				(obj->dir_x==CK_Dir_Left && (ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_LEFT))){
+					obj->var3 += 1;
+			}else{
+				obj->var3 = 7; // Don't delay when left / right is pushed again
+			}
+
+			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP || obj->var3 >= 8){
+				obj->var3 = 0;
+				// Climb up
+				obj->state = ck_objClimbing;
+				obj->animation_tick = 0;
+				obj->ck_frame = &ck_KeenCrawl1;
+			}
+			if( (ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_DOWN) ||
+				(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]) ||
+				(obj->dir_x==CK_Dir_Right && (ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_LEFT)) ||
+				(obj->dir_x==CK_Dir_Left && (ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_RIGHT)) ){
+				// Drop
+				obj->state = ck_objFalling;
+				obj->animation_tick = 0;
+				obj->ck_frame = &ck_KeenFall;
+				obj->frozen = false;
+				// Play fall sound
+				LK_SD_PlaySound(CK_SND_FALL);
+			}
+		}
+		if(obj->frozen)
+			return;
+	}
+	
 	if(obj->state == ck_objStanding && ck_localGameState.on_ground && obj->accel_x == 0){
 		obj->animation_tick = 0;
 		obj->ck_frame = &ck_KeenStand;
+		obj->dir_y = CK_Dir_None;
 
 		// Reset clip rect
 		obj->clip_rects.clipY = 0;
@@ -1316,15 +1623,17 @@ void LK_LogicKeen(ck_object *obj){
 
 	}
 
-	if(!ck_localGameState.on_ground){
-		if(obj->state == ck_objStanding){
+	if(!ck_localGameState.on_ground[obj->var4]){
+		if(obj->state == ck_objIdle||obj->state == ck_objStanding||obj->state == ck_objWalking){
 			obj->state = ck_objFalling;
 			obj->animation_tick = 0;
 			obj->ck_frame = &ck_KeenFall;
+			// Play fall sound
+			LK_SD_PlaySound(CK_SND_FALL);
 		}
 	}
-	if(ck_curInput & GBA_BUTTON_RIGHT){
-		if(ck_localGameState.is_pogoing){
+	if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_RIGHT){
+		if(ck_localGameState.is_pogoing[obj->var4]){
 			if(ck_randomTick & 1){
 				obj->accel_x += 1;
 				if(obj->accel_x>=0){
@@ -1338,7 +1647,7 @@ void LK_LogicKeen(ck_object *obj){
 				obj->accel_x += 2;
 			}
 		}
-		if(ck_localGameState.on_ground){
+		if(ck_localGameState.on_ground[obj->var4]){
 			if(obj->can_move){
 				obj->accel_x += 2;
 				// Start walking
@@ -1349,8 +1658,8 @@ void LK_LogicKeen(ck_object *obj){
 				}
 			}
 		}
-	}else if(ck_curInput & GBA_BUTTON_LEFT){
-		if(ck_localGameState.is_pogoing){
+	}else if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_LEFT){
+		if(ck_localGameState.is_pogoing[obj->var4]){
 			if(ck_randomTick & 1){
 				obj->accel_x -= 1;
 				if(obj->accel_x<=0){
@@ -1364,7 +1673,7 @@ void LK_LogicKeen(ck_object *obj){
 			}
 			obj->dir_x = CK_Dir_Left;
 		}
-		if(ck_localGameState.on_ground){
+		if(ck_localGameState.on_ground[obj->var4]){
 			if(obj->can_move){
 				obj->accel_x -= 2;
 				// Start walking
@@ -1386,22 +1695,31 @@ void LK_LogicKeen(ck_object *obj){
 		}
 	}
 
-	if(ck_curInput & GBA_BUTTON_UP){
-		if(!ck_localGameState.is_pogoing && ck_localGameState.on_ground){
+	if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
+		if(!ck_localGameState.is_pogoing[obj->var4] && ck_localGameState.on_ground[obj->var4]){
 			// Look Up
 			if(obj->state == ck_objStanding){
 				obj->animation_tick = 0;
 				obj->ck_frame = &ck_KeenLookUp;
+				obj->dir_y = CK_Dir_Up;
+				if(obj->var4==ck_localGameState.player_ips[0])
+					ck_cam_y -= 2;
 			}
 		}
-	}else if(ck_curInput & GBA_BUTTON_DOWN){
-		if(!ck_localGameState.is_pogoing && ck_localGameState.on_ground){
+	}else if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_DOWN){
+		if(!ck_localGameState.is_pogoing[obj->var4] && ck_localGameState.on_ground[obj->var4]){
 			// Look down
 			if(obj->state == ck_objStanding){
 				obj->animation_tick = 0;
 				obj->ck_frame = &ck_KeenLookDown;
 				obj->clip_rects.clipY = 8;
 				obj->clip_rects.clipH = 16;
+				if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
+					obj->dir_y = CK_Dir_Down;
+					ck_localGameState.ck_keeninputs[obj->var4] &= ~CK_GBA_BUTTON_SET[ck_localGameState.jump_set];
+				}
+				if(obj->var4==ck_localGameState.player_ips[0])
+					ck_cam_y += 2;
 			}
 		}
 	}/*else{
@@ -1419,31 +1737,31 @@ void LK_LogicKeen(ck_object *obj){
 	if(obj->can_move==false)
 		obj->accel_x = 0;
 
-	if(ck_curInput & CK_GBA_BUTTON_SET[ck_localGameState.throw_set]){
-		if(ck_localGameState.has_thrown == false){
-			ck_localGameState.has_thrown = true;
+	if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.throw_set]){
+		if(ck_localGameState.has_thrown[obj->var4] == false){
+			ck_localGameState.has_thrown[obj->var4] = true;
 
-			if(ck_curInput & GBA_BUTTON_UP){
+			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
 
-				if(ck_localGameState.on_ground && ck_localGameState.is_pogoing==false){
+				if(ck_localGameState.on_ground[obj->var4] && ck_localGameState.is_pogoing[obj->var4]==false){
 					obj->animation_tick = 0;
 					obj->state = ck_objThrowing;
 					obj->ck_frame = &ck_KeenThrow1;
 					obj->accel_x = 0;
 				}else{
-					ck_localGameState.is_pogoing = false;
+					ck_localGameState.is_pogoing[obj->var4] = false;
 					obj->ck_frame = &ck_KeenJumpThrow1;
 				}
 			}else
-			if(ck_curInput & GBA_BUTTON_DOWN){
-				if(!ck_localGameState.on_ground){
+			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_DOWN){
+				if(!ck_localGameState.on_ground[obj->var4]){
 
 					obj->animation_tick = 0;
 					obj->ck_frame = &ck_KeenJumpThrowDown1;
-					ck_localGameState.is_pogoing = false;
+					ck_localGameState.is_pogoing[obj->var4] = false;
 				}
 			}else{
-				if(ck_localGameState.on_ground && ck_localGameState.is_pogoing==false){
+				if(ck_localGameState.on_ground[obj->var4] && ck_localGameState.is_pogoing[obj->var4]==false){
 					obj->state = ck_objThrowing;
 					obj->animation_tick = 0;
 					obj->ck_frame = &ck_KeenThrow1;
@@ -1452,7 +1770,7 @@ void LK_LogicKeen(ck_object *obj){
 				else{
 					if(!(obj->ck_frame == &ck_KeenJumpThrow1 || obj->ck_frame == &ck_KeenJumpThrow2)){
 						obj->state = ck_objFalling;
-						ck_localGameState.is_pogoing = false;
+						ck_localGameState.is_pogoing[obj->var4] = false;
 						obj->animation_tick = 0;
 						obj->ck_frame = &ck_KeenJumpThrow1;
 					}
@@ -1462,8 +1780,8 @@ void LK_LogicKeen(ck_object *obj){
 	}else{
 		if((obj->ck_frame == &ck_KeenThrow1 || obj->ck_frame == &ck_KeenThrow2 || obj->ck_frame == &ck_KeenThrow3 || 
 		obj->ck_frame == &ck_KeenJumpThrow1 || obj->ck_frame == &ck_KeenJumpThrow2) == 0){
-			ck_localGameState.has_thrown = false;
-			ck_localGameState.thrown_bomb = false;
+			ck_localGameState.has_thrown[obj->var4] = false;
+			ck_localGameState.thrown_bomb[obj->var4] = false;
 
 			if(obj->state == ck_objThrowing){
 				obj->state = ck_objStanding;
@@ -1477,107 +1795,113 @@ void LK_LogicKeen(ck_object *obj){
 	}
 
 	// Spawn the bomb
-	if(ck_localGameState.thrown_bomb==false){
+	if(ck_localGameState.thrown_bomb[obj->var4]==false){
 		short vdir = CK_Dir_None; 
-		if(ck_curInput & GBA_BUTTON_UP){
+		if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
 			vdir = CK_Dir_Up;
 		}
 		if(obj->ck_frame == & ck_KeenThrow3){
-			ck_localGameState.thrown_bomb = true;
+			ck_localGameState.thrown_bomb[obj->var4] = true;
 			if(obj->dir_x == CK_Dir_Left){
-				LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x, vdir);
+				LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x, vdir,obj->var4);
 			}
 			if(obj->dir_x == CK_Dir_Right){
-				LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x, vdir);
+				LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x, vdir,obj->var4);
 			}
 		}
 		if(obj->ck_frame == & ck_KeenJumpThrow2){
-			ck_localGameState.thrown_bomb = true;
+			ck_localGameState.thrown_bomb[obj->var4] = true;
 			if(obj->dir_x == CK_Dir_Left){
-				LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x,vdir);
+				LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x,vdir,obj->var4);
 			}
 			if(obj->dir_x == CK_Dir_Right){
-				LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x,vdir);
+				LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x,vdir,obj->var4);
 			}
 		}
 		if(obj->ck_frame == & ck_KeenJumpThrowDown2){
-			ck_localGameState.thrown_bomb = true;
-			LK_SpawnBomb(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down);
+			ck_localGameState.thrown_bomb[obj->var4] = true;
+			LK_SpawnBomb(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4);
 		}
 	}
 	
 
-	if(ck_curInput & CK_GBA_BUTTON_SET[ck_localGameState.shoot_set]){
-		if(ck_localGameState.has_shot == false){
-			ck_localGameState.has_shot = true;
+	if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.shoot_set]){
+		if(ck_localGameState.has_shot[obj->var4] == false){
+			int hasShot = 0;
+			ck_localGameState.has_shot[obj->var4] = true;
 
-			if(ck_curInput & GBA_BUTTON_UP){
+			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
 
-				LK_SpawnShot(obj->pos_x,obj->pos_y-8,CK_Dir_None,CK_Dir_Up);
-				
-				LK_SD_PlaySound(&CK_Sound_Keen_Shot);
-
-				if(ck_localGameState.on_ground && ck_localGameState.is_pogoing==false){
+				if(ck_localGameState.ck_shots[obj->var4]){
+					LK_SpawnShot(obj->pos_x,obj->pos_y-8,CK_Dir_None,CK_Dir_Up,obj->var4);
+					hasShot = 1;
+				}
+				if(ck_localGameState.on_ground[obj->var4] && ck_localGameState.is_pogoing[obj->var4]==false){
 					obj->animation_tick = 0;
 					obj->state = ck_objShooting;
 					obj->ck_frame = &ck_KeenShootUp;
 					obj->can_move = false;
 					obj->accel_x = 0;
 				}else{
-					ck_localGameState.is_pogoing = false;
+					ck_localGameState.is_pogoing[obj->var4] = false;
 					obj->ck_frame = &ck_KeenJumpShootUp;
 				}
 			}else
-			if(ck_curInput & GBA_BUTTON_DOWN){
-				if(!ck_localGameState.on_ground){
-					LK_SpawnShot(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down);
-
-					LK_SD_PlaySound(&CK_Sound_Keen_Shot);
-
+			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_DOWN){
+				if(!ck_localGameState.on_ground[obj->var4]){
+					if(ck_localGameState.ck_shots[obj->var4]){
+						LK_SpawnShot(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4);
+						hasShot = true;
+					}
 					obj->animation_tick = 0;
 					obj->ck_frame = &ck_KeenShootDown;
-					ck_localGameState.is_pogoing = false;
+					ck_localGameState.is_pogoing[obj->var4] = false;
 				}
 			}else{
-				if(ck_localGameState.on_ground && ck_localGameState.is_pogoing==false){
+				if(ck_localGameState.on_ground[obj->var4] && ck_localGameState.is_pogoing[obj->var4]==false){
 					obj->state = ck_objShooting;
 					obj->animation_tick = 0;
 					obj->ck_frame = &ck_KeenShoot;
 					obj->can_move = false;
-					if(obj->dir_x == CK_Dir_Left){
-						LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None);
+					if(ck_localGameState.ck_shots[obj->var4]){
 
-						LK_SD_PlaySound(&CK_Sound_Keen_Shot);
-					}
-					if(obj->dir_x == CK_Dir_Right){
-						LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None);
-
+						if(obj->dir_x == CK_Dir_Left){
+							LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+						}
+						if(obj->dir_x == CK_Dir_Right){
+							LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+						}
+						hasShot = true;
 					}
 				}
 				else{
 					if(obj->ck_frame != &ck_KeenJumpShoot){
 						obj->state = ck_objFalling;
-						ck_localGameState.is_pogoing = false;
+						ck_localGameState.is_pogoing[obj->var4] = false;
 						obj->animation_tick = 0;
 						obj->ck_frame = &ck_KeenJumpShoot;
-						if(obj->dir_x == CK_Dir_Left){
-							LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None);
-
-							LK_SD_PlaySound(&CK_Sound_Keen_Shot);
-						}
-						if(obj->dir_x == CK_Dir_Right){
-							LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None);
-							
-							LK_SD_PlaySound(&CK_Sound_Keen_Shot);
+						if(ck_localGameState.ck_shots[obj->var4]){
+							if(obj->dir_x == CK_Dir_Left){
+								LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+							}
+							if(obj->dir_x == CK_Dir_Right){
+								LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+							}
+							hasShot = true;
 						}
 					}
 				}
+			}
+			if(hasShot){
+				LK_SD_PlaySound(CK_SND_KEEN_SHOT);
+			}else{
+				LK_SD_PlaySound(CK_SND_KEEN_NO_SHOT);
 			}
 		}
 	}else{
 		if(obj->ck_frame != &ck_KeenShootUp && obj->ck_frame != &ck_KeenJumpShootUp &&
 			obj->ck_frame != &ck_KeenShootDown && obj->ck_frame != &ck_KeenShoot && obj->ck_frame != &ck_KeenShootPole){
-			ck_localGameState.has_shot = false;
+			ck_localGameState.has_shot[obj->var4] = false;
 			if(obj->state == ck_objShooting){
 				obj->state = ck_objStanding;
 				obj->can_move = true;
@@ -1586,37 +1910,37 @@ void LK_LogicKeen(ck_object *obj){
 	}
 
 
-	if(ck_lastInput & CK_GBA_BUTTON_SET[ck_localGameState.pogo_set]){
+	if(ck_localGameState.ck_lastkeeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.pogo_set]){
 		obj->dir_y = CK_Dir_Up;
 
 		// stop
-		if(ck_localGameState.is_pogoing){
+		if(ck_localGameState.is_pogoing[obj->var4]){
 			obj->state = ck_objFalling;
 			obj->animation_tick = 0;
 			obj->ck_frame = &ck_KeenFall;
-			ck_localGameState.is_pogoing = false;
+			ck_localGameState.is_pogoing[obj->var4] = false;
 		}else{
 			// Start pogoing
 			if(obj->state == ck_objStanding || obj->state == ck_objWalking || obj->state == ck_objJumping || obj->state == ck_objFalling){
 				obj->state = ck_objBouncing;
 				obj->animation_tick = 0;
 				obj->ck_frame = &ck_KeenPogo2;
-				if(ck_localGameState.on_ground){
+				if(ck_localGameState.on_ground[obj->var4]){
 					obj->accel_y = -1;
 
-					if(ck_curInput & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
+					if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
 						obj->accel_y -= 1;
 					}
 				}
-				ck_localGameState.is_pogoing = true;
+				ck_localGameState.is_pogoing[obj->var4] = true;
 			}
 		}
 		// Remove last input
-		ck_lastInput = 0;
+		ck_localGameState.ck_lastkeeninputs[obj->var4] = 0;
 	}
 
 
-	if(ck_curInput & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
+	if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
 		obj->dir_y = CK_Dir_Up;
 		// Start jumping
 		if(obj->state == ck_objStanding || obj->state == ck_objWalking){
@@ -1624,9 +1948,9 @@ void LK_LogicKeen(ck_object *obj){
 			obj->animation_tick = 0;
 			obj->ck_frame = &ck_KeenJump1;
 			obj->accel_y = -3;
-			ck_localGameState.on_ground = false;
+			ck_localGameState.on_ground[obj->var4] = false;
 			// Play sound
-			LK_SD_PlaySound(&CK_Sound_Keen_Jump);
+			LK_SD_PlaySound(CK_SND_JUMP);
 
 		}
 		if(obj->state == ck_objJumping){
@@ -1642,20 +1966,20 @@ void LK_LogicKeen(ck_object *obj){
 		obj->state  = ck_objFalling;
 	}
 
-	if(ck_localGameState.on_ground){
-		if(ck_localGameState.is_pogoing){
+	if(ck_localGameState.on_ground[obj->var4]){
+		if(ck_localGameState.is_pogoing[obj->var4]){
 			// Play bounce sound
-			LK_SD_PlaySound(&CK_Sound_Keen_Pogo);
+			LK_SD_PlaySound(CK_SND_POGO);
 
 			obj->animation_tick = 0;
 			obj->ck_frame = &ck_KeenPogo2; // Reset the animation
 
-			if(ck_curInput & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
+			if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
 				obj->accel_y -= 12;
-				ck_localGameState.on_ground = false;
+				ck_localGameState.on_ground[obj->var4] = false;
 			}else{
 				obj->accel_y -= 8;
-				ck_localGameState.on_ground = false;
+				ck_localGameState.on_ground[obj->var4] = false;
 			}
 		}
 	}
@@ -1678,21 +2002,19 @@ void LK_LogicKeen(ck_object *obj){
 
 
 
-void LK_LogicNetKeen(ck_object *obj){
-	
-	// TODO:
-	// Get network stuff
-	// Make obj move via packets
-
-};
 
 short globalCK_X = 0;
 short globalCK_Y = 0;
+short globalCK_UpdateCam = 0;
+short globalCK_Vel = 0;
+
+
 
 void LK_UpdateKeen(ck_object *obj){
 	short absAccelY = GBA_ABS(obj->accel_y);
 	short oldAccelY;
 	int a;
+	if(obj->frozen) return; // Don't change anything!
 	if(absAccelY>=8){
 		oldAccelY = obj->accel_y;
 		if(oldAccelY<0)
@@ -1717,7 +2039,7 @@ void LK_UpdateKeen(ck_object *obj){
 
 	obj->pos_x += obj->accel_x;
 
-	if(!ck_localGameState.is_pogoing){
+	if(!ck_localGameState.is_pogoing[obj->var4]){
 		if(obj->state == ck_objStanding || obj->state == ck_objWalking){
 			obj->accel_x = 0;
 		}else if(obj->state == ck_objStanding){
@@ -1730,8 +2052,18 @@ void LK_UpdateKeen(ck_object *obj){
 			}
 		}
 	}
-	globalCK_X = obj->pos_x;
-	globalCK_Y = obj->pos_y;
+	if(obj->var4 == GBA_SerialID){
+		globalCK_X = obj->pos_x;
+		globalCK_Y = obj->pos_y;
+		
+		globalCK_Vel = obj->accel_y;
+		
+		if(ck_localGameState.on_ground[obj->var4] || obj->frozen || obj->can_move == false){
+			globalCK_UpdateCam = 1;
+		}else{
+			globalCK_UpdateCam = 0;
+		}
+	}
 };
 
 
@@ -1749,6 +2081,8 @@ void LK_SpawnKeen(int x,int y, unsigned short player_id){
 
 	obj->pos_x = x;
 	obj->pos_y = y;
+	obj->spawn_x = x;
+	obj->spawn_y = y;
 	obj->accel_x = 0;
 	obj->accel_y = 0;
 	obj->dir_x = CK_Dir_Right;
@@ -1759,6 +2093,9 @@ void LK_SpawnKeen(int x,int y, unsigned short player_id){
 
 	obj->var1 = obj->var2 = obj->var3 = obj->var4 = 0;
 
+	obj->var1 = 0x40; // Invincable timer
+	obj->var2 = 0; // Respawn timer
+	obj->var3 = 0; // Climb counter
 	obj->var4 = player_id;
 
 	obj->clip_rects.clipX = 4;
@@ -1767,6 +2104,7 @@ void LK_SpawnKeen(int x,int y, unsigned short player_id){
 	obj->clip_rects.clipH = 24;
 
 	obj->can_move = true;
+	obj->frozen = false;
 
 	if(obj->spr_id1==128)
 		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
@@ -1784,13 +2122,13 @@ void LK_SpawnKeen(int x,int y, unsigned short player_id){
 	obj->animation_tick = 0;
 	obj->ck_frame = &ck_KeenStand;
 	obj->ck_render = &LK_DrawKeen;
-	if(ck_localGameState.player_ips[GBA_SerialID] == player_id){
+//	if(ck_localGameState.player_ips[GBA_SerialID] == player_id){
 		obj->ck_input = &LK_LogicKeen;
 		obj->ck_update_obj = &LK_UpdateKeen;
-	}else{
-		obj->ck_input = &LK_LogicNetKeen;
-		obj->ck_update_obj = &LK_UpdateNetKeen;
-	}
+	//}else{
+//		obj->ck_input = &LK_LogicNetKeen;
+//		obj->ck_update_obj = &LK_UpdateNetKeen;
+	//}
 	obj->ck_collide_obj = &LK_PhysCollideKeen;
 };
 
@@ -1836,6 +2174,19 @@ void LK_RemoveObj(unsigned short index){
 	GBA_RemoveSprite(CK_ObjectList[index].spr_id2);
 	GBA_RemoveSprite(CK_ObjectList[index].spr_id3);
 	CK_ObjectList[index].ck_frame = NULL;
+};
+
+
+void LK_RemoveNonKeenObjs(){
+	int i;
+	for(i = 0; i < 100; i++){
+		if(CK_ObjectList[i].type != ck_objPlayer){
+			GBA_RemoveSprite(CK_ObjectList[i].spr_id1);
+			GBA_RemoveSprite(CK_ObjectList[i].spr_id2);
+			GBA_RemoveSprite(CK_ObjectList[i].spr_id3);
+			CK_ObjectList[i].ck_frame = NULL;
+		}
+	}
 };
 
 

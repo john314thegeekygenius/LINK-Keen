@@ -31,13 +31,18 @@ typedef struct ck_Folder {
 }ck_Folder;
 
 char *LK_US_Itoa(short v);
+char *LK_US_uItoa(unsigned short v);
 
 extern uint16_t US_TextX ;
 extern uint16_t US_TextY ;
 
+void LK_US_ResetTiles();
+
 void LK_US_PrintXY(char *str);
 void LK_US_TextBox(char *str);
-void CK_US_ThrowError(char *str);
+void LK_US_ThrowError(char *str);
+
+void LK_US_ResetROM();
 
 void LK_US_DrawControlPannel();
 void LK_US_ResetControlPannel();

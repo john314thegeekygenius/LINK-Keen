@@ -86,8 +86,8 @@ void GBA_ResetSprites(){
 // Removes a sprite (moves it off the screen)
 void GBA_RemoveSprite(uint16_t id){
 	if(id > 127) return;
-	GBA_SpriteList[id].a0 = 0;
-	GBA_SpriteList[id].a1 = 0;
+	GBA_SpriteList[id].a0 = 0xF0;
+	GBA_SpriteList[id].a1 = 0xA0;
 	GBA_SpriteList[id].a2 = 0;
 	GBA_UPDATE_SPRITES()
 };
@@ -194,12 +194,8 @@ void GBA_FindGBAs(){
 		// Master Gamboy is always connected
 		GBA_GameBoysConnected[0] = 1;
 
-		GBA_Delay(100); // Wait a bit
-
 		// Send data
 		GBA_Serial_SendWord(0x1234);
-
-		GBA_Delay(100); // Wait a bit
 
 		GBA_UpdateSerial();
 
@@ -216,8 +212,12 @@ void GBA_FindGBAs(){
 };
 
 short GBA_WaitSerial(void){
+	if(GBA_SerialID != 0){
+		// Wait for transfer to start
+		while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_BUSY) != GBA_COM_BUSY); 
+	}
 	GBA_TimeOutTick = 0;
-	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_BUSY) == 1){
+	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_BUSY) == GBA_COM_BUSY){
 		GBA_TimeOutTick += 1;
 		if(GBA_TimeOutTick > GBA_SERIAL_TIMEOUT){
 			GBA_TimeOutTick = 0;
@@ -248,18 +248,30 @@ void GBA_Serial_SendWord(unsigned short word){
 	// Put data into register
 	*(volatile uint16_t*)GBA_REG_SCCNT_H = word;
 
+	GBA_Delay(GBA_S_MIN_WAIT); // Wait for a bit
+
 	if(GBA_SerialID == 0){
 		*(volatile uint16_t*)GBA_REG_SCCNT_L |= GBA_COM_BUSY; // Send start signal	
 	}
+	
+	/*
 	if(GBA_WaitSerial()){
 		// Get the data
 		GBA_SerialData[0] = *(volatile uint16_t*)GBA_REG_SCD0;
 		GBA_SerialData[1] = *(volatile uint16_t*)GBA_REG_SCD1;
 		GBA_SerialData[2] = *(volatile uint16_t*)GBA_REG_SCD2;
 		GBA_SerialData[3] = *(volatile uint16_t*)GBA_REG_SCD3;
-	}
+	}*/
 };
 
+void GBA_ClearSerial(){
+	// Clear with 0's
+	GBA_SerialData[0] = 0x00;
+	GBA_SerialData[1] = 0x00;
+	GBA_SerialData[2] = 0x00;
+	GBA_SerialData[3] = 0x00;
+
+};
 
 
 //////////// Sound Stuff
@@ -556,7 +568,7 @@ void GBA_SetSoundFreq(short id, int freq){
 
 
 void GBA_PlaySample(GBA_SoundSample *sample, char loop, char channel){
-
+	if(sample==NULL) return; // Don't play bad samples!
 	#ifndef GBA_MIX_MY_AUDIO
 	if(channel==GBA_CHANNEL_A){
 		GBA_Channel_A_VBlanks = sample->num_samples * sample->sample_rate;
@@ -601,26 +613,25 @@ void GBA_StopChannel(char channel){
 	
 	#ifndef GBA_MIX_MY_AUDIO
 	if(channel==GBA_CHANNEL_A){
+        // Disable the sound and DMA transfer on channel A
+        *(volatile uint16_t*)GBA_SOUNDCNT_H &= ~(GBA_DSND_A_RIGHT | GBA_DSND_A_LEFT | GBA_DSND_A_FIFO_RESET | GBA_DSND_TIMER0 | GBA_DSND_A_RATIO);
+        *(volatile unsigned int*)GBA_DMA1_COUNT = 0;
+
 		GBA_Channel_A_VBlanks = 0;
 		GBA_Channel_A_Samples = 0;
 		GBA_Loop_Channel_A = 0;
 		GBA_Channel_A_Src = (void*)0;
 
-        // Disable the sound and DMA transfer on channel A
-        *(volatile uint16_t*)GBA_SOUNDCNT_H &= ~(GBA_DSND_A_RIGHT | GBA_DSND_A_LEFT | GBA_DSND_A_FIFO_RESET | GBA_DSND_TIMER0 | GBA_DSND_A_RATIO);
-        *(volatile unsigned int*)GBA_DMA1_COUNT = 0;
-
 	}else 
 	#endif
 	if(channel==GBA_CHANNEL_B){
+        // Disable the sound and DMA transfer on channel B
+        *(volatile uint16_t*)GBA_SOUNDCNT_H &= ~(GBA_DSND_B_RIGHT | GBA_DSND_B_LEFT | GBA_DSND_B_FIFO_RESET | GBA_DSND_TIMER1 | GBA_DSND_B_RATIO);
+        *(volatile unsigned int*)GBA_DMA2_COUNT = 0;
 		GBA_Channel_B_VBlanks = 0;
 		GBA_Channel_B_Samples = 0;
 		GBA_Loop_Channel_B = 0;
 		GBA_Channel_B_Src = (void*)0;
-
-        // Disable the sound and DMA transfer on channel B
-        *(volatile uint16_t*)GBA_SOUNDCNT_H &= ~(GBA_DSND_B_RIGHT | GBA_DSND_B_LEFT | GBA_DSND_B_FIFO_RESET | GBA_DSND_TIMER1 | GBA_DSND_B_RATIO);
-        *(volatile unsigned int*)GBA_DMA2_COUNT = 0;
 	}
 };
 
