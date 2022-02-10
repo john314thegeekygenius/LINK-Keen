@@ -7,7 +7,25 @@
 #include "ck_map2.h"
 
 
-uint16_t *ck_levels_data[] = {
+const char *ck_map0_info[] = {
+	"Test map 0",
+	"By John314",
+	"30 x 20"
+};
+
+const char *ck_map1_info[] = {
+	"Test map 1",
+	"By John314",
+	"64 x 20"
+};
+
+const char *ck_map2_info[] = {
+	"QED Arena",
+	"By Mink",
+	"64 x 48"
+};
+
+const uint16_t *ck_levels_data[] = {
 	&ck_map0_data,
 	&ck_map1_data,
 	&ck_map2_data,
@@ -19,7 +37,7 @@ uint16_t *ck_levels_data[] = {
 
 };
 
-unsigned char * ck_levels_tileset[] = {
+const unsigned char ** ck_levels_tileset[] = {
 	&ck_map0_tileset,
 	&ck_map1_tileset,
 	&ck_map2_tileset,
@@ -32,7 +50,8 @@ unsigned char * ck_levels_tileset[] = {
 	0,
 
 };
-uint16_t *ck_levels_tileinfo[] = {
+
+const uint16_t *ck_levels_tileinfo[] = {
 	&ck5_tileset0_tileinfo,
 	&ck5_tileset0_tileinfo,
 	&ck5_tileset0_tileinfo,
@@ -44,7 +63,7 @@ uint16_t *ck_levels_tileinfo[] = {
 
 };
 
-uint16_t ck_levels_width[] = {
+const uint16_t ck_levels_width[] = {
 	ck_map0_width,
 	ck_map1_width,
 	ck_map2_width,
@@ -57,7 +76,7 @@ uint16_t ck_levels_width[] = {
 	0,
 };
 
-uint16_t ck_levels_height[] = {
+const uint16_t ck_levels_height[] = {
 	ck_map0_height,
 	ck_map1_height,
 	ck_map2_height,
@@ -70,7 +89,7 @@ uint16_t ck_levels_height[] = {
 };
 
 
-char ** ck_levels_info[] = {
+const char ** ck_levels_info[] = {
 	&ck_map0_info,
 	&ck_map1_info,
 	&ck_map2_info,
@@ -82,7 +101,7 @@ char ** ck_levels_info[] = {
 
 };
 
-uint16_t ck_levels_music[] = {
+const uint16_t ck_levels_music[] = {
 	ck_map0_music,
 	ck_map1_music,
 	ck_map2_music,
