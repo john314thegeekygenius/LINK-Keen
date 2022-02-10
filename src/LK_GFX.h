@@ -3,8 +3,25 @@
 #define CK_SHOT_PIC (cki_itemsOffset) + 64
 #define CK_SHOT_SPLAT cki_itemsOffset + 64 + 4
 
+#define CK_BAD_SHOT_PIC (cki_itemsOffset) 
+#define CK_BAD_SHOT_SPLAT cki_itemsOffset + 4
+
+#define CK_GUN_PIC (cki_itemsOffset) + 8
+#define CK_GUN_PICKUP cki_itemsOffset + 64 + 8
+
 #define CK_BOMB_PIC cki_itemsOffset + 12
-#define CK_BOMB_EXPLODE cki_itemsOffset + 64 + 12
+#define CK_BOMB_PICKUP cki_itemsOffset + 64 + 12
+#define CK_BOMB_EXPLODE cki_itemsOffset + 128
+
+#define CK_HEAL_PIC1 cki_itemsOffset + 320 + 8
+#define CK_HEAL_PIC2 cki_itemsOffset + 320 + 12
+#define CK_HEAL_PIC3 cki_itemsOffset + 320 + 16
+#define CK_HEAL_PIC4 cki_itemsOffset + 320 + 20
+
+#define CK_HEAL_SHADOW1 cki_itemsOffset + 320 + 24
+#define CK_HEAL_SHADOW2 cki_itemsOffset + 320 + 28
+#define CK_HEAL_SHADOW3 cki_itemsOffset + 352 + 24
+#define CK_HEAL_SHADOW4 cki_itemsOffset + 352 + 28
 
 
 #define CK_BOTTOM_HALF 94
@@ -67,7 +84,8 @@
 #define CK_KEEN_POLE_SHOOT_UP 56
 #define CK_KEEN_POLE_SHOOT_DOWN 58
 
-#define CK_KEEN_POLE_SHOOT_HAND 86 + CK_BOTTOM_HALF + 46
+// Uses the same animation as jump shooting
+#define CK_KEEN_POLE_SHOOT_HAND 86 + CK_BOTTOM_HALF + CK_BOTTOM_HALF
 
 #define CK_KEEN_THROW1 60
 #define CK_KEEN_THROW2 62

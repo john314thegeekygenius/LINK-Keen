@@ -14,10 +14,12 @@ extern const uint16_t cki_itemsSheet ;
 
 #define cki_itemsOffset  0
 
-#define cki_player1Offset (64*6*16)
-#define cki_player2Offset (64*7*16)
-#define cki_player3Offset (64*8*16)// (16*32*8)+256//256+80+64
-#define cki_player4Offset (64*9*16)// (16*32*8)+386//384+80+64
+#define cki_playerGraphicsStart 16
+
+#define cki_player1Offset (16*32*cki_playerGraphicsStart)
+#define cki_player2Offset (16*32*(cki_playerGraphicsStart+1))
+#define cki_player3Offset (16*32*(cki_playerGraphicsStart+2)) //(64*10*16)// (16*32*8)+256//256+80+64
+#define cki_player4Offset (16*32*(cki_playerGraphicsStart+3))// (16*32*8)+386//384+80+64
 
 #define cki_playerSheetWidth 752
 
@@ -39,7 +41,8 @@ extern volatile uint16_t* GBA_BG3_Map   ;
 
 extern volatile uint16_t* GBA_BG_Palette;
 
-
+extern const unsigned char tilescreen_data[];
+extern const unsigned char timelabs_data[];
 
 #define CK_GBA_BLOCK0 0x00
 #define CK_GBA_BLOCK1 0x04
@@ -53,8 +56,9 @@ extern volatile uint16_t* GBA_BG_Palette;
 
 
 void LK_CA_SetupGraphics();
+void LK_CA_CopySpriteSheet();
 void LK_CA_SetPlayerSprite(int sprId, int sheetId);
-void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int sheetrotation, int pid);
+void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int sheetrotation, int pid,int white);
 
 #endif
 

@@ -15,6 +15,11 @@
 #include "CK_Data/spot_sheet.h"
 #include "CK_Data/blaster_sheet.h"
 
+// Intro screens
+#include "CK_Data/tilescreen.h"
+#include "CK_Data/timelabs.h"
+
+
 #include "CK_Data/ck5_sprites.h"
 
 const unsigned short ck_graphics_palette [] = {
@@ -66,7 +71,7 @@ volatile uint16_t* GBA_BG_Palette = (uint16_t*)GBA_PAL_BG_START;
 void LK_CA_SetupGraphics(){
 	int i ;
 	// Setup the video
-	*(volatile uint16_t*)GBA_REG_DISPCNT = GBA_MODE_0 | GBA_ENABLE_BG0 | GBA_ENABLE_BG1 | GBA_ENABLE_BG2 | GBA_SPRITE_ENABLE;// | GBA_SPRITE_MAP_1D;
+	*(volatile uint16_t*)GBA_REG_DISPCNT = GBA_MODE_0 | GBA_ENABLE_BG0 | GBA_ENABLE_BG1 | GBA_ENABLE_BG2 | GBA_ENABLE_BG3 | GBA_SPRITE_ENABLE;// | GBA_SPRITE_MAP_1D;
 
 	// Copy the palette
 	GBA_DMA_Copy16((uint16_t*)GBA_BG_Palette,(uint16_t*)ck_graphics_palette,GBA_PAL_SIZE);
@@ -76,14 +81,16 @@ void LK_CA_SetupGraphics(){
 		GBA_BG0_Map[i] = 0;
 		GBA_BG1_Map[i] = 0;
 		GBA_BG2_Map[i] = 0;
+		GBA_BG3_Map[i] = 0;
 	}
-
+	
 	// Stop all backgrounds from showing
 	GBA_FINISH_BG0(0);
 	GBA_FINISH_BG1(0);
 	GBA_FINISH_BG2(0);
+	GBA_FINISH_BG3(0);
 
-	//GBA_BLEND_BGS(GBA_BLD_S_BG1 | GBA_BLDM_APLHA | GBA_BLD_D_BG0)
+	//GBA_BLEND_BGS(GBA_BLD_S_SPR | GBA_BLDM_APLHA |  GBA_BLD_D_BG3 |  GBA_BLD_D_BG2 |  GBA_BLD_D_BG1)
 
 
 	// "Hide" all the sprites
@@ -93,17 +100,16 @@ void LK_CA_SetupGraphics(){
 
 	// Palette
 	GBA_DMA_Copy16((uint16_t*)GBA_PAL_SPR_START,(uint16_t*)ck_graphics_palette,GBA_PAL_SIZE);
+
+	// Show the sprite
+	GBA_UPDATE_SPRITES()
+
+};
+
+void LK_CA_CopySpriteSheet(){
 	// Data
 	GBA_DMA_Copy16((uint16_t*)GBA_SPRGFX_START+cki_itemsSheet,(uint16_t*)ck5_sprites_data,(ck5_sprites_size)>>1);
 //	GBA_DMA_Copy16((uint16_t*)GBA_SPRGFX_START+cki_bitsSheet,(uint16_t*)bits_sheet_data,(bits_sheet_size)>>1);
-/*
-	LK_CA_SetPlayerSprite(cki_player1Sheet,0);
-	LK_CA_SetPlayerSprite(cki_player2Sheet,1);
-	LK_CA_SetPlayerSprite(cki_player3Sheet,2);
-	LK_CA_SetPlayerSprite(cki_player4Sheet,3);
-*/	
-	// Show the sprite
-	GBA_UPDATE_SPRITES()
 
 };
 
@@ -134,9 +140,26 @@ void LK_CA_SetPlayerSprite(int sprId, int sheetId){
 };
 
 
+void LK_US_CopyWhite(uint32_t* dest, uint32_t* source, int amount) {
+	uint32_t val, out;
+	while(amount--){
+		val = *(source++);
+		out = 0;
+		if(val&0xFF000000)
+			out += 0x0F000000;
+		if(val&0x00FF0000)
+			out += 0x000F0000;
+		if(val&0x0000FF00)
+			out += 0x00000F00;
+		if(val&0x000000FF)
+			out += 0x0000000F;
+		*(dest++) = out;
+	}
+};
+
 int lastSprID[8];
 
-void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int sheetrotation, int pid){
+void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int sheetrotation, int pid, int white){
 	uint16_t *data = NULL;
 	int sprOff = 0;
 	switch(pid){
@@ -172,6 +195,7 @@ void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int 
 		case 4:
 		data = (uint16_t*)&blaster_sheet_data;
 		break;
+		
 		default:
 		data = (uint16_t*)&keen_sheet_data;
 		break;
@@ -183,17 +207,30 @@ void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int 
 		GBA_DMA_MemSet32((uint16_t*)GBA_SPRGFX_START+sprOff+(32*16),0,32*3);
 		GBA_DMA_MemSet32((uint16_t*)GBA_SPRGFX_START+sprOff+(128),0,32*3);
 	}
-	GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff,data+(sprId1*32),32); // Top
-	GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(32*16),data+(sprId1*32)+(cki_playerSheetWidth<<2),32); // Middle
-	GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(64),data+(sprId2*32)+(cki_playerSheetWidth<<2),32); // Bottom
+	if(white){
+		LK_US_CopyWhite((uint16_t*)GBA_SPRGFX_START+sprOff,data+(sprId1*32),32); // Top
+		LK_US_CopyWhite((uint16_t*)GBA_SPRGFX_START+sprOff+(32*16),data+(sprId1*32)+(cki_playerSheetWidth<<2),32); // Middle
+		LK_US_CopyWhite((uint16_t*)GBA_SPRGFX_START+sprOff+(64),data+(sprId2*32)+(cki_playerSheetWidth<<2),32); // Bottom
 
-	if(sheetrotation==1){
-		GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(128),data+(sprId3*32),32); // Extra (Horizontal)
+		if(sheetrotation==1){
+			LK_US_CopyWhite((uint16_t*)GBA_SPRGFX_START+sprOff+(128),data+(sprId3*32),32); // Extra (Horizontal)
+		}else{
+			LK_US_CopyWhite((uint16_t*)GBA_SPRGFX_START+sprOff+(128),data+(sprId3*32),16); // Extra (Virtical)
+			LK_US_CopyWhite((uint16_t*)GBA_SPRGFX_START+sprOff+(128)+(32*16),data+(sprId3*32)+32,16); // Extra (Virtical)
+		}
 	}else{
-		GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(128),data+(sprId3*32),16); // Extra (Virtical)
-		GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(128)+(32*16),data+(sprId3*32)+32,16); // Extra (Virtical)
-	}
 
+		GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff,data+(sprId1*32),32); // Top
+		GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(32*16),data+(sprId1*32)+(cki_playerSheetWidth<<2),32); // Middle
+		GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(64),data+(sprId2*32)+(cki_playerSheetWidth<<2),32); // Bottom
+
+		if(sheetrotation==1){
+			GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(128),data+(sprId3*32),32); // Extra (Horizontal)
+		}else{
+			GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(128),data+(sprId3*32),16); // Extra (Virtical)
+			GBA_DMA_Copy32((uint16_t*)GBA_SPRGFX_START+sprOff+(128)+(32*16),data+(sprId3*32)+32,16); // Extra (Virtical)
+		}
+	}
 
 };
 

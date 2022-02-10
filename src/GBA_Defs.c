@@ -149,6 +149,7 @@ unsigned short GBA_SerialID = 0;
 unsigned short GBA_BaudRate = 0;
 unsigned char GBA_SerialError = 0;
 unsigned short GBA_TimeOutTick = 0;
+unsigned short GBA_SerialAvailable = 0;
 
 void GBA_InitSerial(unsigned short baud){
 	// Set this to 0 (Enable serial communication)
@@ -157,6 +158,8 @@ void GBA_InitSerial(unsigned short baud){
 	// Setup the baud rate and com type
 	*(volatile uint16_t*)GBA_REG_SCCNT_L = GBA_BaudRate | GBA_COM_MULTI;
 	GBA_BaudRate = baud;
+	
+	GBA_SerialAvailable = 1;
 
 	GBA_FindGBAs();
 };
@@ -177,7 +180,21 @@ void GBA_FindGBAs(){
 	// Make sure GBAs are connected
 
 	// Wait for all GameBoys to connect
-	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_STATUS)==0);
+	GBA_TimeOutTick = 0;
+	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_STATUS)==0){
+		GBA_TimeOutTick += 1;
+		if(GBA_TimeOutTick > GBA_SERIAL_TIMEOUT){
+			GBA_TimeOutTick = 0;
+			// No link connected
+			GBA_SerialAvailable = 0;
+			return;
+		}
+		if(*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ERROR){
+			// No link connected
+			GBA_SerialAvailable = 0;
+			return;
+		}
+	}
 
 	// Put init packet head into register
 	*(volatile uint16_t*)GBA_REG_SCCNT_H = 0xAAAA;
@@ -207,19 +224,23 @@ void GBA_FindGBAs(){
 				GBA_NGameBoysConnected += 1;
 			}
 		}
+		GBA_SerialAvailable = 1;
 	}
 
 };
 
 short GBA_WaitSerial(void){
+	if(!GBA_SerialAvailable) return;
 	if(GBA_SerialID != 0){
 		// Wait for transfer to start
 		while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_BUSY) != GBA_COM_BUSY); 
 	}
+	// Wait for transfer to end
+//	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_BUSY) == GBA_COM_BUSY);
 	GBA_TimeOutTick = 0;
 	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_BUSY) == GBA_COM_BUSY){
 		GBA_TimeOutTick += 1;
-		if(GBA_TimeOutTick > GBA_SERIAL_TIMEOUT){
+		if(GBA_TimeOutTick > (GBA_SERIAL_TIMEOUT<<1)){
 			GBA_TimeOutTick = 0;
 			GBA_SerialError = 1;
 			return 0;
@@ -229,11 +250,12 @@ short GBA_WaitSerial(void){
 			GBA_SerialError = 1;
 			return 0;
 		}
-	}; // Wait for transfer to end
+	};
 	return 1;
 };
 
 void GBA_UpdateSerial(void){
+	if(!GBA_SerialAvailable) return;
 	if(GBA_WaitSerial()){
 		// Get the data
 		GBA_SerialData[0] = *(volatile uint16_t*)GBA_REG_SCD0;
@@ -243,14 +265,20 @@ void GBA_UpdateSerial(void){
 	}
 };
 
+int GBA_Synced = 0;
+
 void GBA_Serial_SendWord(unsigned short word){
+	if(!GBA_SerialAvailable) return;
 
 	// Put data into register
 	*(volatile uint16_t*)GBA_REG_SCCNT_H = word;
 
-	GBA_Delay(GBA_S_MIN_WAIT); // Wait for a bit
-
 	if(GBA_SerialID == 0){
+/*		if(GBA_Synced == 0){
+			GBA_Synced = 1;
+			GBA_Delay(GBA_S_MAX_WAIT); // Wait for a bit
+		}*/
+		GBA_Delay(10); // Wait for a bit
 		*(volatile uint16_t*)GBA_REG_SCCNT_L |= GBA_COM_BUSY; // Send start signal	
 	}
 	

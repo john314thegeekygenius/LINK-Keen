@@ -32,6 +32,9 @@ typedef enum {
 	ck_objJumping,
 	ck_objIdlePole,
 	ck_objClimbPole,
+	ck_objSlidePole,
+	ck_objShootPole,
+	ck_objThrowPole,
 	ck_objFalling,
 	ck_objShooting,
 	ck_objThrowing,
@@ -39,6 +42,7 @@ typedef enum {
 	ck_objHolding,
 	ck_objClimbing,
 	ck_objDead,
+	ck_objEnterDoor,
 }ck_objectState;
 
 typedef enum {
@@ -48,6 +52,8 @@ typedef enum {
 	ck_objEnemyShot,
 	ck_objBomb,
 	ck_objKill,
+	ck_objItem,
+	ck_objShadow,
 }ck_objectType;
 
 typedef struct ck_object {
@@ -55,6 +61,8 @@ typedef struct ck_object {
 	short pos_y; // global y
 	short spawn_x; // local x
 	short spawn_y; // local y
+	short topos_x; // to x
+	short topos_y; // to y
 	short accel_x;
 	short accel_y;
 	short dir_x;
@@ -70,8 +78,16 @@ typedef struct ck_object {
 	short var3;
 	short var4;
 
+	int int1; // variables for random things
+	int int2;
+
 	boolean can_move;
+	boolean can_grab;
+	boolean can_climb;
+	short interacting; // Is keen interacting with anything (aka. looking up or down)
+	short trying_to_move; // Is keen trying to move left or right
 	boolean frozen; // Keeps keen still
+	boolean frozen2; // Keeps keen still but collides with the map
 
 	unsigned short spr_id1; // index of first sprite
 	unsigned short spr_id2; // index of second sprite
@@ -93,12 +109,7 @@ extern short globalCK_Y;
 extern short globalCK_UpdateCam;
 extern short globalCK_Vel;
 
-
-void LK_KillKeen(ck_object *obj);
-
-void LK_SpawnKeen(int x,int y, unsigned short player_id);
-void LK_SpawnKeenNPC(int x,int y, unsigned short player_id);
-
+// Objects stuff
 void LK_SetupObjects();
 ck_object *LK_GetNewObj(char priority);
 void LK_RemoveObj(unsigned short index);
@@ -107,6 +118,14 @@ void LK_RemoveNonKeenObjs();
 void LK_UpdateObjects(void);
 void LK_RenderObjects(void);
 
+
+// Objects.c stuff
+void LK_KillKeen(ck_object *obj);
+void LK_SpawnKeen(int x,int y, unsigned short player_id);
+void LK_SpawnKeenNPC(int x,int y, unsigned short player_id);
+
+// Act1.c stuff
+void LK_ACT_SpawnStunner(int x,int y);
 
 #endif
 

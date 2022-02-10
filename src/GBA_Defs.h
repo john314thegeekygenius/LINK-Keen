@@ -5,8 +5,10 @@
 // We don't want to mix audio right now
 //#define GBA_MIX_MY_AUDIO 1
 
+typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned long uint32_t;
+
 
 #define GBA_ABS(x) ((x)<0?-(x):(x))
 
@@ -211,9 +213,24 @@ Address: 0x400001E -  Vertical scroll co-ordinate for BG3 (Write Only)
 // they are each 16K big 
 #define GBA_CHAR_BLOCK(block) (GBA_VRAM + ((block) * 0x4000))
 
+// Locations:
+// 0x06000000
+// 0x06004000
+// 0x06008000
+// 0x0600C000
+
+// End by:
+// 0x07000000
+
 // return a pointer to one of the 32 screen blocks (0-31)
 // they are each 2K big 
 #define GBA_SCREEN_BLOCK(block) (GBA_VRAM + ((block) * 0x800))
+// Locations:
+// These overwrite sprite data!!
+// 0x06010000  -- block 20 (20<<8) 1400h
+// 0x06010800  -- block 21 (21<<8) 1500h
+// 0x06011000  -- block 22 (22<<8) 1600h
+// 0x06011800  -- block 23 (23<<8) 1700h
 
 #define GBA_WAIT_VBLANK while (*(volatile uint16_t*) GBA_REG_VTRACE < 160) { }
 
@@ -275,6 +292,12 @@ Address: 0x400001E -  Vertical scroll co-ordinate for BG3 (Write Only)
 #define GBA_SPRITE_ZFRONT 0x400 // 
 #define GBA_SPRITE_ZMID   0x800 // 
 #define GBA_SPRITE_ZBACK  0xC00 // Render the sprite on bottom
+
+
+#define GBA_SPRITE_RNORM   0x000 // Render the sprite solid
+#define GBA_SPRITE_RTANS   0x400 // Render the sprite transparent
+#define GBA_SPRITE_ROBJW   0x800 // Render the sprite in window ???
+#define GBA_SPRITE_RDONT   0xC00 // Do not use!
 
 
 // 1024 chunks of 32 bytes
@@ -346,6 +369,12 @@ void GBA_RemakeSprite(GBA_SpriteIndex_t index, int x, int y, GBA_SpriteSizes siz
 	if((index)>=0&&(index)<128){\
 	GBA_SpriteList[(index)].a2 &= 0xFC00; \
 	GBA_SpriteList[(index)].a2 |= (tileindex)&0x3FF;\
+	}
+
+#define GBA_SET_RENDER(index,rend) \
+	if((index)>=0&&(index)<128){\
+	GBA_SpriteList[(index)].a1 &= 0xF3FF; \
+	GBA_SpriteList[(index)].a1 |= (rend);\
 	}
 
 #define GBA_UPDATE_SPRITES() GBA_DMA_Copy32((uint32_t*)GBA_SPRITE_START, (uint32_t*)GBA_SpriteList, GBA_NUM_SPRITES << 1);
@@ -540,7 +569,7 @@ void GBA_SetSoundFreq(short id, int freq);
 
 #define GBA_CLOCK 16777216
 #define GBA_VBLANK_CLOCK 280806
-
+#define GBA_REFRESH_RATE 59.6781927
 
 ////// Sample stuff
 
@@ -681,7 +710,7 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_COM_BAUD_57600 0x02
 #define GBA_COM_BAUD_115200 0x03
 
-#define GBA_SERIAL_TIMEOUT 0x1000
+#define GBA_SERIAL_TIMEOUT 0x100
 
 #define GBA_SI_TERMINAL 0x04 // READ ONLY
 
@@ -705,14 +734,14 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_COM_MULTI 0x2000
 #define GBA_COM_UART 0x3000
 
-// 120 = 2 Vsyncs
-#define GBA_S_MIN_WAIT 120 // The minimum amount of time needed to wait for the data to get thru
+#define GBA_S_MAX_WAIT 80 // The maximum amount of time needed to wait for the data to get thru
 
 extern unsigned short GBA_GameBoysConnected[4];
 extern unsigned short GBA_NGameBoysConnected;
 extern unsigned short GBA_SerialID;
 extern unsigned short GBA_SerialData[4];
 extern unsigned char GBA_SerialError;
+extern unsigned short GBA_SerialAvailable;
 
 void GBA_InitSerial(unsigned short baud);
 void GBA_FindGBAs();

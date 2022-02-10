@@ -19,6 +19,11 @@ typedef enum {
 	ck_CMusic,
 	ck_CSound,
 	ck_CControls,
+	ck_CSettings,
+	ck_CNPlayers,
+	ck_CNBombs,
+	ck_CNShots,
+	ck_CNLives,
 }ck_MenuNames;
 
 typedef struct ck_Folder {

@@ -10,6 +10,7 @@
 // Max of 64 levels
 #define CK_MAX_LEVELS 2
 
+extern uint16_t * ck_level_data;
 extern unsigned short ck_level_width;
 extern unsigned short ck_level_height;
 extern unsigned short ck_level_music;
@@ -143,24 +144,25 @@ std::string TileMiscFlags[0x7F] = {
 // Map stuff
 char** LK_MP_GetMapInfo(uint16_t mapid);
 
-extern uint16_t *ck_levels_data[] ;
+extern const uint16_t *ck_levels_data[] ;
 
-extern unsigned char * ck_levels_tileset[];
+extern const unsigned char ** ck_levels_tileset[];
 
-extern uint16_t *ck_levels_tileinfo[] ;
+extern const uint16_t *ck_levels_tileinfo[] ;
 
-extern uint16_t ck_levels_width[];
+extern const uint16_t ck_levels_width[];
 
-extern uint16_t ck_levels_height[];
+extern const uint16_t ck_levels_height[];
 
-extern char ** ck_levels_info[];
+extern const char ** ck_levels_info[];
 
-extern uint16_t ck_levels_music[];
+extern const uint16_t ck_levels_music[];
 
 extern boolean ck_mapneeds_updated;
 
 // Other stuff
 void LK_MP_SetTile(uint16_t x, uint16_t y, uint16_t tile, uint16_t plane);
+uint16_t LK_MP_GetTile(uint16_t x, uint16_t y, uint16_t plane);
 
 void LK_MP_UpdateCamera();
 

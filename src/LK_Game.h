@@ -23,7 +23,9 @@ typedef struct ck_gameState {
 	short num_players; // How many players are gona play
 	unsigned short player_ips[4]; // IP of players
 	boolean player_connected[4]; // Is the player still connected
-
+	
+	boolean update_scorebox; // Does the scorebox need redrawn?
+	
 	// Keen stuff
 	short ck_shots[4]; // How many shots does the player have
 	short ck_lives[4]; // How many lives does the player have

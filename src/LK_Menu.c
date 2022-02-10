@@ -20,17 +20,19 @@
 // Define some menus
 
 
-char* ck_SNewGame[] = {"Start Solo","Join Game","Character","Map","Game"};
+char* ck_SNewGame[] = {"Start Solo","Join Game","Character","Map","Game Settings"};
 char* ck_SOptions[] = {"Music","Sound","Controls"};
-char* ck_SGame[]    = {"Num Players","Num Bombs","Num Shots"};
+char* ck_SGame[]    = {"Num Players","Num Bombs","Num Shots","Num Lives"};
 char* ck_SMainMenu[] = {"New Game","Options","Send Game"};
 
-char ck_BNewGame[] = {1,0,1,1};
+char ck_BNewGame[] = {1,0,1,1,1};
 char ck_BOptions[] = {1,1,1};
+char ck_BGame[] = {1,1,1,1};
 char ck_BMainMenu[] = {1,1,0};
 
 
-ck_Folder ck_FMainMenu,ck_FNewGame,ck_FOptions;
+ck_Folder ck_FMainMenu,ck_FNewGame,ck_FOptions,ck_FSettings,
+			ck_FNPlayers, ck_FNBombs, ck_FNShots, ck_FNLives;
 
 //////// New Game
 ck_Folder ck_FSoloGame  = {ck_CSoloGame, NULL,  NULL,  0, &ck_FNewGame,
@@ -42,6 +44,19 @@ ck_Folder ck_FCharacter  = {ck_CCharacter, NULL,  NULL,  0, &ck_FNewGame,
 ck_Folder ck_FMap  = {ck_CMap, NULL,  NULL,  0, &ck_FNewGame,
 	{NULL}};
 
+//////// Game Settings
+ck_Folder ck_FSettings  = {ck_CSettings, &ck_BGame,  &ck_SGame,  4, &ck_FNewGame,
+	{&ck_FNPlayers, &ck_FNBombs, &ck_FNShots, &ck_FNLives, NULL}};
+ck_Folder ck_FNPlayers  = {ck_CNPlayers, NULL,  NULL,  0, &ck_FSettings,
+	{NULL}};
+ck_Folder ck_FNBombs  = {ck_CNBombs, NULL,  NULL,  0, &ck_FSettings,
+	{NULL}};
+ck_Folder ck_FNShots  = {ck_CNShots, NULL,  NULL,  0, &ck_FSettings,
+	{NULL}};
+ck_Folder ck_FNLives  = {ck_CNLives, NULL,  NULL,  0, &ck_FSettings,
+	{NULL}};
+
+
 //// Options
 
 ck_Folder ck_FMusic  = {ck_CMusic, NULL,  NULL,  0, &ck_FOptions,
@@ -52,10 +67,10 @@ ck_Folder ck_FControls  = {ck_CControls, NULL,  NULL,  0, &ck_FOptions,
 	{NULL}};
 
 
-ck_Folder ck_FNewGame  = {ck_CNewGame, &ck_BNewGame,  &ck_SNewGame,  0, &ck_FMainMenu,
-	{&ck_FSoloGame, &ck_FJoinGame, &ck_FCharacter, &ck_FMap, NULL}};
+ck_Folder ck_FNewGame  = {ck_CNewGame, &ck_BNewGame,  &ck_SNewGame,  5, &ck_FMainMenu,
+	{&ck_FSoloGame, &ck_FJoinGame, &ck_FCharacter, &ck_FMap, &ck_FSettings, NULL}};
 
-ck_Folder ck_FOptions  = {ck_COptions, &ck_BOptions,  &ck_SOptions,  0, &ck_FMainMenu,
+ck_Folder ck_FOptions  = {ck_COptions, &ck_BOptions,  &ck_SOptions,  3, &ck_FMainMenu,
 	{&ck_FMusic,&ck_FSound,&ck_FControls,NULL}};
 
 ck_Folder ck_FSendGame  = {ck_CSendGame, NULL,  NULL,  0, &ck_SMainMenu,
@@ -124,7 +139,7 @@ char *LK_US_Itoa(short v){
 	if(v>=1000) nlen += 1;
 	if(v>=10000) nlen += 1;
 
-	US_Itoa_String[nlen+1] = 0;
+	US_Itoa_String[nlen] = 0;
 	nlen -= 1;
 	while(v>0){
 		US_Itoa_String[nlen--] = '0'+(v%10);
@@ -234,8 +249,14 @@ void LK_US_ResetTiles(){
 	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)cwrist_tiles_data,(cwrist_tiles_size)>>1);
 	// Copy the tileset into the block
 	GBA_DMA_Copy16((uint16_t*)GBA_BG1_Tiles,(uint16_t*)cwrist_font_data,(cwrist_font_size)>>1);
+	// Copy the tileset into the block
+	GBA_DMA_Copy16((uint16_t*)GBA_BG2_Tiles,(uint16_t*)cwrist_font_data,(cwrist_font_size)>>1);
+	// Copy the tileset into the block
+	GBA_DMA_Copy16((uint16_t*)GBA_BG3_Tiles,(uint16_t*)cwrist_font_data,(cwrist_font_size)>>1);
 	// Finish the render of the background
 	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_32x32);
+	
+	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_32x32);
 };
 
 void LK_US_ThrowError(char *str){
@@ -250,6 +271,7 @@ void LK_US_ThrowError(char *str){
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0x96,32*32);
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*32);
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*32);
+	GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0,32*32);
 	US_TextX = 15-((GBA_StrLen(str)>>1)+1); US_TextY = 8;
 	LK_US_TextBox(str);
 	
@@ -271,14 +293,18 @@ void LK_US_DrawControlPannel(){
 		// Check for multiplayer
 		if(ck_localGameState.multiplayerAvailable){
 //			ck_BMainMenu[2] = 1; // Yay! :D
-			ck_BNewGame[1] = 1;
+			if(ck_localGameState.num_players>1){
+				ck_BNewGame[1] = 1;
+			}else{
+				ck_BNewGame[1] = 0; // :( no one to play with
+			}
 		}else{
 			ck_BMainMenu[2] = 0;
 			ck_BNewGame[1] = 0;
 		}
 		
 		// Copy the tileset into the block
-		GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)cwrist_tiles_data,(cwrist_tiles_size)>>1);
+//		GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)cwrist_tiles_data,(cwrist_tiles_size)>>1);
 
 		// Copy the map data into the block
 		GBA_DMA_Copy16((uint16_t*)GBA_BG0_Map,(uint16_t*)cwrist_map,(cwrist_map_width * cwrist_map_height));
@@ -301,6 +327,11 @@ void LK_US_DrawControlPannel(){
 			for(i = 0; i < 5; i++)
 				GBA_BG0_Map[167+7+i] = 83+i;
 			break;
+			case ck_CSettings:
+			case ck_CNPlayers:
+			case ck_CNBombs:
+			case ck_CNShots:
+			case ck_CNLives:
 			case ck_CMusic:
 			case ck_CSound:
 			case ck_CControls:
@@ -323,10 +354,10 @@ void LK_US_DrawControlPannel(){
 				GBA_BG0_Map[167+4+i] = 83+i;
 			break;
 		}
-
+/*
 		// Copy the tileset into the block
 		GBA_DMA_Copy16((uint16_t*)GBA_BG1_Tiles,(uint16_t*)cwrist_font_data,(cwrist_font_size)>>1);
-
+*/
 		// Clear the maps
 		for(i = 0; i < 32*32; i++){
 			GBA_BG1_Map[i] = 0;
@@ -346,9 +377,20 @@ void LK_US_DrawControlPannel(){
 		}
 		ck_ControlPannelMenu->menuLength = i;
 
+
+
+
+		if(ck_ControlPannelMenu->menuName==ck_CMainMenu){
+			US_TextX = 7; US_TextY = 14;
+			if(ck_localGameState.multiplayerAvailable){
+				LK_US_PrintXY("Link Connected");
+			}
+		}
+
 		// Finish the render of the background
-		GBA_FINISH_BG1(GBA_BG_TOP | CK_GBA_BLOCK1 | CK_GBA_MAP1 | GBA_BG_SIZE_32x32);
-		GBA_FINISH_BG2(GBA_BG_TOP | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_32x32);
+		GBA_FINISH_BG1(GBA_BG_MID | CK_GBA_BLOCK1 | CK_GBA_MAP1 | GBA_BG_SIZE_32x32);
+		GBA_FINISH_BG2(GBA_BG_MID | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_32x32);
+		GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_32x32);
 
 		//GBA_BLEND_BGS(GBA_BLD_S_BG1 | GBA_BLDM_APLHA | GBA_BLD_D_BG0)
 
@@ -391,17 +433,182 @@ void LK_US_DrawControlPannel(){
 		case ck_CSetup:
 			ck_localGameState.num_players = 0;
 		break;
+		case ck_CNPlayers:
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Num Players:");
+			US_TextX = 12; US_TextY = 8;
+			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.num_players));
+
+			ck_selectorX = ck_localGameState.num_players;
+			if(ck_lastInput & GBA_BUTTON_LEFT){
+				ck_selectorX  -= 1;
+				if(ck_selectorX<1) ck_selectorX = 1;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+
+			if(ck_lastInput & GBA_BUTTON_RIGHT){
+				ck_selectorX  += 1;
+				if(ck_selectorX>4) ck_selectorX = 4;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			ck_localGameState.num_players = ck_selectorX;
+		break;
+		case ck_CNBombs:
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Starting bombs");
+			US_TextX = 12; US_TextY = 8;
+			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.start_bombs));
+			ck_selectorX = ck_localGameState.start_bombs;
+			if(ck_lastInput & GBA_BUTTON_LEFT){
+				ck_selectorX  -= 1;
+				if(ck_selectorX<0) ck_selectorX = 0;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			if(ck_lastInput & GBA_BUTTON_RIGHT){
+				ck_selectorX  += 1;
+				if(ck_selectorX>9) ck_selectorX = 9;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			ck_localGameState.start_bombs = ck_selectorX;
+		break;
+		case ck_CNShots:
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Starting shots");
+			US_TextX = 12; US_TextY = 8;
+			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.start_shots));
+			ck_selectorX = ck_localGameState.start_shots;
+			if(ck_lastInput & GBA_BUTTON_LEFT){
+				ck_selectorX  -= 5;
+				if(ck_selectorX<0) ck_selectorX = 0;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			if(ck_lastInput & GBA_BUTTON_RIGHT){
+				ck_selectorX  += 5;
+				if(ck_selectorX>99) ck_selectorX = 99;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			ck_localGameState.start_shots = ck_selectorX;
+		break;
+		case ck_CNLives:
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 7; US_TextY = 9;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Start health");
+			US_TextX = 12; US_TextY = 8;
+			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.start_health));
+			US_TextX = 9; US_TextY = 9;
+			LK_US_PrintXY("Kills to win");
+			US_TextX = 12; US_TextY = 10;
+			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.end_kills));
+
+			// Clear the last position
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			LK_US_PrintGlyph(ck_selectorGlyph);
+
+			if(ck_lastInput & GBA_BUTTON_UP){
+				ck_selectorY  -= 1;
+				// Clear the flag
+				ck_lastInput = 0;
+			}
+			if(ck_lastInput & GBA_BUTTON_DOWN){
+				ck_selectorY  += 1;
+				// Clear the flag
+				ck_lastInput = 0;
+			}
+
+			if(ck_selectorY < 0){
+				ck_selectorY = 0;
+			}
+			if(ck_selectorY >= 1){
+				ck_selectorY = 1;
+			}
+
+			// Get the old glyph
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			ck_selectorGlyph = LK_US_GetGlyph();
+
+			// Draw the selector
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			LK_US_PrintGlyph(ck_selectorGlyph+1);
+
+			if(ck_selectorY == 0){
+				ck_selectorX = ck_localGameState.start_health;
+
+
+				if(ck_lastInput & GBA_BUTTON_LEFT){
+					ck_selectorX  -= 10;
+					if(ck_selectorX<50) ck_selectorX = 50;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+
+				if(ck_lastInput & GBA_BUTTON_RIGHT){
+					ck_selectorX  += 10;
+					if(ck_selectorX>200) ck_selectorX = 200;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.start_health = ck_selectorX;
+			}
+			if(ck_selectorY == 1){
+				ck_selectorX = ck_localGameState.end_kills;
+
+
+				if(ck_lastInput & GBA_BUTTON_LEFT){
+					ck_selectorX  -= 1;
+					if(ck_selectorX<1) ck_selectorX = 1;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+
+				if(ck_lastInput & GBA_BUTTON_RIGHT){
+					ck_selectorX  += 1;
+					if(ck_selectorX>15) ck_selectorX = 15;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.end_kills = ck_selectorX;
+			}
+		break;
 		case ck_CCharacter:
 			ck_selectorX = ck_localGameState.player_pics[0];
 			// Show selected character
 			if(ck_DrawnCharacter==false){
 				GBA_ResetSprites();
 				// Make it standing animation
-				LK_CA_HackPlayerSprite(0, 94, 0, ck_selectorX, 0,0);
+				LK_CA_HackPlayerSprite(0, 94, 0, ck_selectorX, 0,0,0);
 				playerSpriteT = GBA_CreateSprite(106, 72,GBA_SPR_16_16,0,GBA_SPRITE_ZTOP);
 				playerSpriteB = GBA_CreateSprite(106, 88,GBA_SPR_16_8, 0,GBA_SPRITE_ZTOP);
-				GBA_SET_SPRITE_TILES(playerSpriteT, 12*32);
-				GBA_SET_SPRITE_TILES(playerSpriteB, (12*32)+4);
+				GBA_SET_SPRITE_TILES(playerSpriteT, cki_playerGraphicsStart*32);
+				GBA_SET_SPRITE_TILES(playerSpriteB, (cki_playerGraphicsStart*32)+4);
 				GBA_SET_FLIPH(playerSpriteT,1)
 				GBA_SET_FLIPH(playerSpriteB,1)
 				GBA_UPDATE_SPRITES()
@@ -418,7 +625,7 @@ void LK_US_DrawControlPannel(){
 
 			if(ck_lastInput & GBA_BUTTON_RIGHT){
 				ck_selectorX  += 1;
-				if(ck_selectorX>8) ck_selectorX = 8;
+				if(ck_selectorX>=8) ck_selectorX = 7;
 				ck_DrawnCharacter = false;
 				// Clear the flag
 				ck_lastInput = 0;
@@ -656,8 +863,7 @@ void LK_US_DrawControlPannel(){
 					ck_lastInput = 0;
 					return;
 				}else{
-					// TODO:
-					// Play Sound Here
+					LK_SD_PlaySound(CK_SND_NO_WAY);
 				}
 			}
 
