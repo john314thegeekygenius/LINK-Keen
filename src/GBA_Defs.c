@@ -242,12 +242,12 @@ short GBA_WaitSerial(void){
 		GBA_TimeOutTick += 1;
 		if(GBA_TimeOutTick > (GBA_SERIAL_TIMEOUT<<1)){
 			GBA_TimeOutTick = 0;
-			GBA_SerialError = 1;
+			GBA_SerialError = GBA_TIMEOUT_ERROR;
 			return 0;
 		}
 
 		if(*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ERROR){
-			GBA_SerialError = 1;
+			GBA_SerialError = GBA_LINK_ERROR;
 			return 0;
 		}
 	};
@@ -412,6 +412,8 @@ void GBA_VSyncIRQ() {
 				*(volatile unsigned int*)GBA_DMA1_SRC   = (unsigned int) GBA_Channel_A_Src;
 				*(volatile unsigned int*)GBA_DMA1_COUNT = GBA_DMA_DEST_FIXED | GBA_DMA_REPEAT | GBA_DMA_32 | GBA_DMA_SNC_TO_TIMER | GBA_DMA_ENABLE;
 			}else{
+				GBA_Channel_A_Src = (void*)0;
+				GBA_Channel_A_VBlanks = 0;
 				// Disable the sound and DMA transfer on channel A
 				*(volatile uint16_t*)GBA_SOUNDCNT_H &= ~(GBA_DSND_A_RIGHT | GBA_DSND_A_LEFT | GBA_DSND_A_FIFO_RESET | GBA_DSND_TIMER0 | GBA_DSND_A_RATIO);
 				*(volatile unsigned int*)GBA_DMA1_COUNT = 0;
@@ -430,6 +432,8 @@ void GBA_VSyncIRQ() {
 				*(volatile unsigned int*)GBA_DMA2_SRC   = (unsigned int) GBA_Channel_B_Src;
 				*(volatile unsigned int*)GBA_DMA2_COUNT = GBA_DMA_DEST_FIXED | GBA_DMA_REPEAT | GBA_DMA_32 | GBA_DMA_SNC_TO_TIMER | GBA_DMA_ENABLE;
 			}else{
+				GBA_Channel_B_Src = (void*)0;
+				GBA_Channel_B_VBlanks = 0;
 	            // Disable the sound and DMA transfer on channel B
 	            *(volatile uint16_t*)GBA_SOUNDCNT_H &= ~(GBA_DSND_B_RIGHT | GBA_DSND_B_LEFT | GBA_DSND_B_FIFO_RESET | GBA_DSND_TIMER1 | GBA_DSND_B_RATIO);
 	            *(volatile unsigned int*)GBA_DMA2_COUNT = 0;
@@ -663,6 +667,15 @@ void GBA_StopChannel(char channel){
 	}
 };
 
+int GBA_SamplePlaying(int channel){
+	if(channel==GBA_CHANNEL_A){
+		return GBA_Channel_A_VBlanks;
+	}
+	if(channel==GBA_CHANNEL_B){
+		return GBA_Channel_B_VBlanks;
+	}
+	return 0;
+};
 
 
 /////////// Audio Mixer

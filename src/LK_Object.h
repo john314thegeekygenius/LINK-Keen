@@ -82,7 +82,7 @@ typedef struct ck_object {
 	int int2;
 
 	boolean can_move;
-	boolean can_grab;
+	int can_grab;
 	boolean can_climb;
 	short interacting; // Is keen interacting with anything (aka. looking up or down)
 	short trying_to_move; // Is keen trying to move left or right
@@ -121,6 +121,7 @@ void LK_RenderObjects(void);
 
 // Objects.c stuff
 void LK_KillKeen(ck_object *obj);
+void LK_MurderKeen(ck_object *obj);
 void LK_SpawnKeen(int x,int y, unsigned short player_id);
 void LK_SpawnKeenNPC(int x,int y, unsigned short player_id);
 

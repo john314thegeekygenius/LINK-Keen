@@ -17,9 +17,9 @@ extern const uint16_t cki_itemsSheet ;
 #define cki_playerGraphicsStart 16
 
 #define cki_player1Offset (16*32*cki_playerGraphicsStart)
-#define cki_player2Offset (16*32*(cki_playerGraphicsStart+1))
-#define cki_player3Offset (16*32*(cki_playerGraphicsStart+2)) //(64*10*16)// (16*32*8)+256//256+80+64
-#define cki_player4Offset (16*32*(cki_playerGraphicsStart+3))// (16*32*8)+386//384+80+64
+#define cki_player2Offset (16*32*(cki_playerGraphicsStart+2))
+#define cki_player3Offset (16*32*(cki_playerGraphicsStart+4)) //(64*10*16)// (16*32*8)+256//256+80+64
+#define cki_player4Offset (16*32*(cki_playerGraphicsStart+6))// (16*32*8)+386//384+80+64
 
 #define cki_playerSheetWidth 752
 
@@ -50,9 +50,9 @@ extern const unsigned char timelabs_data[];
 #define CK_GBA_BLOCK3 0x0C
 
 #define CK_GBA_MAP0 0x1000
-#define CK_GBA_MAP1 0x1100
-#define CK_GBA_MAP2 0x1200
-#define CK_GBA_MAP3 0x1300
+#define CK_GBA_MAP1 0x1200
+#define CK_GBA_MAP2 0x1400
+#define CK_GBA_MAP3 0x1600
 
 
 void LK_CA_SetupGraphics();

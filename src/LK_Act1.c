@@ -285,7 +285,7 @@ void LK_ACT_StunnerCol(ck_object *obj,ck_object *obj2){
 				ck_localGameState.ck_shots[obj2->var4] = 99;
 			}
 			ck_localGameState.update_scorebox = true;
-			LK_SD_PlaySound(CK_SND_PICKUP_SPECIAL);
+			LK_SD_PlaySound(CK_SND_PICKUP_STUNNER);
 			LK_ACT_SpawnShadow(obj->pos_x,obj->pos_y,0);
 		}
 	}
@@ -360,7 +360,6 @@ void LK_ACT_SpawnItem(int x,int y,int id){
 	obj->animation_tick = 0;
 	switch(id){
 		case 0:
-		default:
 			obj->ck_frame = &ck_StunnerItem;
 			obj->ck_collide_obj = &LK_ACT_StunnerCol;
 			break;
@@ -372,6 +371,10 @@ void LK_ACT_SpawnItem(int x,int y,int id){
 			obj->ck_frame = &ck_HealItem1;
 			obj->ck_collide_obj = &LK_ACT_HealthCol;
 			break;
+		default:
+			obj->ck_frame = NULL;
+			obj->ck_collide_obj = &LK_ACT_ItemCollidePlayer;
+		break;
 	}
 	obj->ck_render = &LK_ACT_DrawItem;
 	obj->ck_input = &LK_ACT_LogicItem;

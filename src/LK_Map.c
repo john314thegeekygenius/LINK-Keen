@@ -85,7 +85,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 		switch(tileid){
 			// Players
 			case 1:
-			LK_SpawnKeen(tx<<3,(ty<<3)-24,0);
+			LK_SpawnKeen(tx<<3,(ty<<3)-16,0);
 			playerx = tx; playery = ty;
 			if(playerx2==0 && playery2==0){
 				playerx2 = tx;
@@ -100,7 +100,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 			case 2:
 			if(ck_localGameState.multiplayerGame ){
 				if(ck_localGameState.num_players>=2){
-					LK_SpawnKeen(tx<<3,(ty<<3)-24,1);
+					LK_SpawnKeen(tx<<3,(ty<<3)-16,1);
 					playerx2 = tx; playery2 = ty;
 					playersSpawned += 1;
 					if(GBA_SerialID == 1){
@@ -113,7 +113,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 			case 3:
 			if(ck_localGameState.multiplayerGame ){
 				if(ck_localGameState.num_players>=3){
-					LK_SpawnKeen(tx<<3,(ty<<3)-24,2);
+					LK_SpawnKeen(tx<<3,(ty<<3)-16,2);
 					if(GBA_SerialID == 2){
 						ck_cam_x = (tx<<3) - (GBA_SCREEN_WIDTH>>1);
 						ck_cam_y = (ty<<3) - (GBA_SCREEN_HEIGHT>>1);
@@ -125,7 +125,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 			case 4:
 			if(ck_localGameState.multiplayerGame ){
 				if(ck_localGameState.num_players>=4){
-					LK_SpawnKeen(tx<<3,(ty<<3)-24,3);
+					LK_SpawnKeen(tx<<3,(ty<<3)-16,3);
 					if(GBA_SerialID == 3){
 						ck_cam_x = (tx<<3) - (GBA_SCREEN_WIDTH>>1);
 						ck_cam_y = (ty<<3) - (GBA_SCREEN_HEIGHT>>1);
@@ -143,23 +143,20 @@ void LK_MP_LoadMap(uint16_t mapid){
 				// Bomb
 				LK_ACT_SpawnItem(tx<<3,ty<<3,1);
 			break;
-			case 34:
+			case 0x2A:
 				// Health
 				LK_ACT_SpawnItem(tx<<3,ty<<3,2);
 			break;
-			case 24:
-			case 25:
-			case 26:
-			case 27:
-//				LK_ACT_SpawnKey(tx<<3,ty<<3,tileid-24);
+			case 0x20:
+			case 0x21:
+			case 0x22:
+			case 0x23:
+//				LK_ACT_SpawnKey(tx<<3,ty<<3,tileid-0x20);
 			break;
-			case 28:
+			case 0x24:
 //				LK_ACT_SpawnCandy(tx<<3,ty<<3);
 			break;
-			case 29:
-//				LK_ACT_SpawnPixiBlue(tx<<3,ty<<3);
-			break;
-			case 30:
+			case 0x27:
 //				LK_ACT_SpawnPixiBlue(tx<<3,ty<<3);
 			break;
 			
@@ -185,7 +182,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 		if(playersSpawned<ck_localGameState.num_players){
 			if(ck_localGameState.num_players==2){
 				// Spawn player 2 with player 1
-				LK_SpawnKeen(playerx<<3,(playery<<3)-24,1);
+				LK_SpawnKeen(playerx<<3,(playery<<3)-16,1);
 				if(GBA_SerialID == 1){
 					ck_cam_x = (playerx<<3) - (GBA_SCREEN_WIDTH>>1);
 					ck_cam_y = (playery<<3) - (GBA_SCREEN_HEIGHT>>1);
@@ -194,21 +191,21 @@ void LK_MP_LoadMap(uint16_t mapid){
 				if(playersSpawned==1){
 					// Spawn all players with player 1
 					for(i = 1; i < ck_localGameState.num_players; i++){
-						LK_SpawnKeen(playerx<<3,(playery<<3)-24,i);
+						LK_SpawnKeen(playerx<<3,(playery<<3)-16,i);
 					}
 					ck_cam_x = (playerx<<3) - (GBA_SCREEN_WIDTH>>1);
 					ck_cam_y = (playery<<3) - (GBA_SCREEN_HEIGHT>>1);
 
 				}else if (playersSpawned==2){
 					// Spawn player 3 with player 1
-					LK_SpawnKeen(playerx<<3,(playery<<3)-24,2);
+					LK_SpawnKeen(playerx<<3,(playery<<3)-16,2);
 					if(GBA_SerialID == 2){
 						ck_cam_x = (playerx<<3) - (GBA_SCREEN_WIDTH>>1);
 						ck_cam_y = (playery<<3) - (GBA_SCREEN_HEIGHT>>1);
 					}
 					if(ck_localGameState.num_players==4){
 						// Spawn player 4 with player 2
-						LK_SpawnKeen(playerx2<<3,(playery2<<3)-24,3);
+						LK_SpawnKeen(playerx2<<3,(playery2<<3)-16,3);
 						if(GBA_SerialID == 3){
 							ck_cam_x = (playerx2<<3) - (GBA_SCREEN_WIDTH>>1);
 							ck_cam_y = (playery2<<3) - (GBA_SCREEN_HEIGHT>>1);
@@ -223,13 +220,16 @@ void LK_MP_LoadMap(uint16_t mapid){
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0,32*24);
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*24);
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*24);
+
 	GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0xD0,32*24);
 	
 	// Draw the status bar
-	{
+	if(ck_localGameState.ck_status_type==1){
 		int statusx = 1;
 		int statusy = 0;
 		int val, val1 , val2;
+		if(ck_localGameState.ck_status_loc)
+			statusy = 18;
 		for(e = 0; e < 4; e++){
 			GBA_BG3_Map[(statusy*32)+statusx] = 0xE0;
 			GBA_BG3_Map[((statusy+1)*32)+statusx] = 0xF0;
@@ -249,40 +249,24 @@ void LK_MP_LoadMap(uint16_t mapid){
 			GBA_BG3_Map[(statusy*32)+statusx+2] = 0xE2+(e<<1);
 			GBA_BG3_Map[((statusy+1)*32)+statusx+2] = 0xF2+(e<<1);
 
-			// Write the correct values
-			if(e==0) val = ck_localGameState.ck_lives[GBA_SerialID];
-			if(e==1) val = ck_localGameState.ck_health[GBA_SerialID];
-			if(e==2) val = ck_localGameState.ck_shots[GBA_SerialID];
-			if(e==3) val = ck_localGameState.ck_bombs[GBA_SerialID];
-			if(val<0){
-				val = -val;
-				GBA_BG3_Map[(statusy*32)+statusx+3] = 0xCA;
-				GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xDA;
-			}
-			if(val>99) val = 99;
-			
-			if(val){
-				val1 = val/10;
-				val2 = val-(val1*10);
-				if(val1<5){
-					GBA_BG3_Map[(statusy*32)+statusx+4] = 0xCB+val1;
-					GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xDB+val1;
-				}else{
-					GBA_BG3_Map[(statusy*32)+statusx+4] = 0xEB+(val1-5);
-					GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xFB+(val1-5);
-				}
-			}
-			
-			if(val2<5){
-				GBA_BG3_Map[(statusy*32)+statusx+5] = 0xCB+val2;
-				GBA_BG3_Map[((statusy+1)*32)+statusx+5] = 0xDB+val2;
-			}else{
-				GBA_BG3_Map[(statusy*32)+statusx+5] = 0xEB+(val2-5);
-				GBA_BG3_Map[((statusy+1)*32)+statusx+5] = 0xFB+(val2-5);
-			}
-
-
 			statusx += 7;
+		}
+	}
+	if(ck_localGameState.ck_status_type==2){
+		int statusx = 3;
+		int statusy = 0;
+		int val, val1 , val2;
+		if(ck_localGameState.ck_status_loc)
+			statusy = 19;
+		for(e = 0; e < 4; e++){
+			// The icon
+			GBA_BG3_Map[(statusy*32)+statusx+1] = 0xD3+e;
+			// The number
+			GBA_BG3_Map[(statusy*32)+statusx+2] = 0xD2;
+			GBA_BG3_Map[(statusy*32)+statusx+3] = 0xD2;
+			GBA_BG3_Map[(statusy*32)+statusx+4] = 0xD2;
+
+			statusx += 6;
 		}
 	}
 	
@@ -291,18 +275,17 @@ void LK_MP_LoadMap(uint16_t mapid){
 	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,16384);
 
 	// Finish the render of the background
-	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_64x64);
+	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_64x32);
 
 	// Finish the render of the background
-	GBA_FINISH_BG1(GBA_BG_MID | CK_GBA_BLOCK1 | CK_GBA_MAP1 | GBA_BG_SIZE_64x64);
+	GBA_FINISH_BG1(GBA_BG_MID | CK_GBA_BLOCK1 | CK_GBA_MAP1 | GBA_BG_SIZE_64x32);
 
 	// Finish the render of the background
-	GBA_FINISH_BG2(GBA_BG_FRONT | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_64x64);
+	GBA_FINISH_BG2(GBA_BG_FRONT | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_64x32);
 
 	// Finish the render of the background
-	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_64x64);
-
-
+	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_64x32);
+	
 	// Can't go beyond border!
 	ck_cam_minx = 16;
 	ck_cam_miny = 16;
@@ -320,29 +303,38 @@ void LK_MP_LoadMap(uint16_t mapid){
 	*(volatile short*)GBA_REG_BG3VOFS = 0;
 	
 	ck_mapneeds_updated = true;
-
 };
 
 
 const short CK_CAM_SPEED = 4;
+//short ck_mapdir = 0;
 
 void LK_MP_UpdateCamera(){
 
 	short keenXloc = globalCK_X - (GBA_SCREEN_WIDTH>>1);
 	short keenYloc = globalCK_Y - (GBA_SCREEN_HEIGHT>>1);
 
+//	ck_mapdir = 0;
 	if(globalCK_X > (16<<3)+ck_cam_x){
 		ck_cam_x += 4;
+//		ck_mapneeds_updated = true;
+//		ck_mapdir |= 1;
 	}
 	if(globalCK_X < (14<<3)+ck_cam_x){
 		ck_cam_x -= 4;
+//		ck_mapneeds_updated = true;
+//		ck_mapdir |= 2;
 	}
 
 	if(globalCK_Y > (16<<3)+ck_cam_y){
 		ck_cam_y += 4;
+//		ck_mapneeds_updated = true;
+//		ck_mapdir |= 4;
 	}
 	if(globalCK_Y < (2<<3)+ck_cam_y){
 		ck_cam_y -= 4;
+//		ck_mapneeds_updated = true;
+//		ck_mapdir |= 8;
 	}
 
 	if(globalCK_UpdateCam){
@@ -401,7 +393,7 @@ void LK_MP_UpdateCamera(){
 
 	if(ck_last_cam_y != (ck_cam_y>>3)){
 		ck_last_cam_y = (ck_cam_y>>3);
-		ck_mapneeds_updated = true;
+		//ck_mapneeds_updated = true;
 	}
 };
 
@@ -443,113 +435,201 @@ void LK_MP_UpdateMap(){
 	}
 };
 
+int ck_mapbuffer = 0;
+
 void LK_MP_RenderMap(){
 	int bgoffset = 0;
 	int lvlx = (ck_cam_x>>3);
 	int lvly = (ck_cam_y>>3);
-	int i = 0, e = 0, ftile = 0, mvi = 0;
+	int i = 0, e = 0, mvi = 0;
+	unsigned char * ftile = NULL;
 	int leveloff = ck_level_width-32;
 
-
 	if(ck_mapneeds_updated){
+		// Swap the map buffer
+		if(ck_mapbuffer==0){
+			ck_mapbuffer = 32;
+		}else{
+			ck_mapbuffer = 0;
+		}
+
 		ck_mapneeds_updated = false;
 		// Copy a region of the map to the screen memory
 		bgoffset = (lvly*ck_level_width)+lvlx;
+		mvi = (ck_mapbuffer<<5);
+		ftile = (unsigned char*)&ck_levelbuff + (bgoffset + ck_level_size);
 		for(i = 0; i < 22; ++i){
-			mvi = (i<<5);
 			for(e = 0; e < 32; e++){
 				*(uint16_t*)(GBA_BG0_Map+mvi) = ck_levelbuff[bgoffset];
-				ftile = ck_levelbuff[bgoffset+ck_level_size];
-				*(uint16_t*)(GBA_BG1_Map+mvi) = ftile;
-				if(((*ck_tileinfo)[512+(ftile*3)+1]&0x8000)!=0x8000 )
-					ftile = 0;
-				*(uint16_t*)(GBA_BG2_Map+mvi) = ftile;
+				*(uint16_t*)(GBA_BG1_Map+mvi) = *ftile;
+				*(uint16_t*)(GBA_BG2_Map+mvi) = 0;
+				if(((*ck_tileinfo)[512+((*ftile)*3)+1]&0x8000))
+					*(uint16_t*)(GBA_BG2_Map+mvi) = *ftile;
+
 				++bgoffset;
 				++mvi;
+				++ftile;
 			}
+			ftile += leveloff;
 			bgoffset += leveloff;
 		}
 	}
 
+	if(ck_mapbuffer){
+		int soff = (ck_cam_scrollx)+(32<<3);
+		GBA_WAIT_VBLANK
+		*(volatile short*)GBA_REG_BG0HOFS = soff;
+		*(volatile short*)GBA_REG_BG1HOFS = soff;
+		*(volatile short*)GBA_REG_BG2HOFS = soff;
+		
+		*(volatile short*)GBA_REG_BG0VOFS = (ck_cam_scrolly);
+		*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
+		*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
+	}else{
+		GBA_WAIT_VBLANK
+		*(volatile short*)GBA_REG_BG0HOFS = (ck_cam_scrollx);
+		*(volatile short*)GBA_REG_BG1HOFS = (ck_cam_scrollx);
+		*(volatile short*)GBA_REG_BG2HOFS = (ck_cam_scrollx);
+		
+		*(volatile short*)GBA_REG_BG0VOFS = (ck_cam_scrolly);
+		*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
+		*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
+	}
+
 	// Update the status bar
+	if(!ck_localGameState.update_scorebox)
+		return;
+
 	if(ck_localGameState.update_scorebox){
 		int statusx = 1;
 		int statusy = 0;
 		int val, val0, val1 , val2;
+		if(ck_localGameState.ck_status_loc)
+			statusy = 18;
 		ck_localGameState.update_scorebox = false;
-		for(e = 0; e < 4; e++){
+		
+		if(ck_localGameState.ck_status_type==1){
+			for(e = 0; e < 4; e++){
 
-			// Write the correct values
-			if(e==0) val = ck_localGameState.ck_lives[GBA_SerialID];
-			if(e==1) val = ck_localGameState.ck_health[GBA_SerialID];
-			if(e==2) val = ck_localGameState.ck_shots[GBA_SerialID];
-			if(e==3) val = ck_localGameState.ck_bombs[GBA_SerialID];
-			if(val<0){
-				val = -val;
-				GBA_BG3_Map[(statusy*32)+statusx+3] = 0xCA;
-				GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xDA;
-			}else{
-				GBA_BG3_Map[(statusy*32)+statusx+3] = 0xE9;
-				GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xF9;
-			}
-			if(e==1){
-				if(val>200) val = 200; // Should never happen
-			}else if(e==3){
-				if(val>9) val = 9; // Should never happen
-			}else{
-				if(val>99) val = 99;
-			}
-			val0 = val / 100;
-			val1 = (val-(val0*100))/10;
-			val2 = val%10;
+				// Write the correct values
+				if(e==0) val = ck_localGameState.ck_lives[GBA_SerialID];
+				if(e==1) val = ck_localGameState.ck_health[GBA_SerialID];
+				if(e==2) val = ck_localGameState.ck_shots[GBA_SerialID];
+				if(e==3) val = ck_localGameState.ck_bombs[GBA_SerialID];
+				if(val<0){
+					val = -val;
+					GBA_BG3_Map[(statusy*32)+statusx+3] = 0xCA;
+					GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xDA;
+				}else{
+					GBA_BG3_Map[(statusy*32)+statusx+3] = 0xE9;
+					GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xF9;
+				}
+				if(e==1){
+					if(val>200) val = 200; // Should never happen
+				}else if(e==3){
+					if(val>9) val = 9; // Should never happen
+				}else{
+					if(val>99) val = 99;
+				}
+				val0 = val / 100;
+				val1 = (val-(val0*100))/10;
+				val2 = val%10;
 
-			if(e==1){
-				if(val0){
-					if(val0<5){
-						GBA_BG3_Map[(statusy*32)+statusx+3] = 0xCB+val0;
-						GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xDB+val0;
-					}else{
-						GBA_BG3_Map[(statusy*32)+statusx+3] = 0xEB+(val0-5);
-						GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xFB+(val0-5);
+				if(e==1){
+					if(val0){
+						if(val0<5){
+							GBA_BG3_Map[(statusy*32)+statusx+3] = 0xCB+val0;
+							GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xDB+val0;
+						}else{
+							GBA_BG3_Map[(statusy*32)+statusx+3] = 0xEB+(val0-5);
+							GBA_BG3_Map[((statusy+1)*32)+statusx+3] = 0xFB+(val0-5);
+						}
 					}
 				}
-			}
-			
-			if(val1||val0){
-				if(val1<5){
-					GBA_BG3_Map[(statusy*32)+statusx+4] = 0xCB+val1;
-					GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xDB+val1;
+				
+				if(val1||val0){
+					if(val1<5){
+						GBA_BG3_Map[(statusy*32)+statusx+4] = 0xCB+val1;
+						GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xDB+val1;
+					}else{
+						GBA_BG3_Map[(statusy*32)+statusx+4] = 0xEB+(val1-5);
+						GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xFB+(val1-5);
+					}
 				}else{
-					GBA_BG3_Map[(statusy*32)+statusx+4] = 0xEB+(val1-5);
-					GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xFB+(val1-5);
+					GBA_BG3_Map[(statusy*32)+statusx+4] = 0xE9;
+					GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xF9;
 				}
-			}else{
-				GBA_BG3_Map[(statusy*32)+statusx+4] = 0xE9;
-				GBA_BG3_Map[((statusy+1)*32)+statusx+4] = 0xF9;
+				
+				if(val2<5){
+					GBA_BG3_Map[(statusy*32)+statusx+5] = 0xCB+val2;
+					GBA_BG3_Map[((statusy+1)*32)+statusx+5] = 0xDB+val2;
+				}else{
+					GBA_BG3_Map[(statusy*32)+statusx+5] = 0xEB+(val2-5);
+					GBA_BG3_Map[((statusy+1)*32)+statusx+5] = 0xFB+(val2-5);
+				}
+				statusx += 7;
 			}
-			
-			if(val2<5){
-				GBA_BG3_Map[(statusy*32)+statusx+5] = 0xCB+val2;
-				GBA_BG3_Map[((statusy+1)*32)+statusx+5] = 0xDB+val2;
-			}else{
-				GBA_BG3_Map[(statusy*32)+statusx+5] = 0xEB+(val2-5);
-				GBA_BG3_Map[((statusy+1)*32)+statusx+5] = 0xFB+(val2-5);
+		}
+		else if(ck_localGameState.ck_status_type==2){
+			statusx = 3;
+			if(ck_localGameState.ck_status_loc)
+				statusy = 19;
+				
+			for(e = 0; e < 4; e++){
+				
+				// Write the correct values
+				if(e==0) val = ck_localGameState.ck_lives[GBA_SerialID];
+				if(e==1) val = ck_localGameState.ck_health[GBA_SerialID];
+				if(e==2) val = ck_localGameState.ck_shots[GBA_SerialID];
+				if(e==3) val = ck_localGameState.ck_bombs[GBA_SerialID];
+				if(val<0){
+					val = -val;
+					GBA_BG3_Map[(statusy*32)+statusx+2] = 0xD1;
+				}else{
+					GBA_BG3_Map[(statusy*32)+statusx+2] = 0xD2;
+				}
+				if(e==1){
+					if(val>200) val = 200; // Should never happen
+				}else if(e==3){
+					if(val>9) val = 9; // Should never happen
+				}else{
+					if(val>99) val = 99;
+				}
+				val0 = val / 100;
+				val1 = (val-(val0*100))/10;
+				val2 = val%10;
+
+				if(e==1){
+					if(val0){
+						GBA_BG3_Map[(statusy*32)+statusx+2] = 0xC0+val0;
+					}
+				}
+				
+				if(val1||val0){
+					GBA_BG3_Map[(statusy*32)+statusx+3] = 0xC0+val1;
+				}else{
+					GBA_BG3_Map[(statusy*32)+statusx+3] = 0xD2;
+				}
+				
+				GBA_BG3_Map[(statusy*32)+statusx+4] = 0xC0+val2;
+				statusx += 6;
 			}
-			statusx += 7;
 		}
 	}
 
-	GBA_WAIT_VBLANK
-	*(volatile short*)GBA_REG_BG0HOFS = (ck_cam_scrollx);
-	*(volatile short*)GBA_REG_BG1HOFS = (ck_cam_scrollx);
-	*(volatile short*)GBA_REG_BG2HOFS = (ck_cam_scrollx);
-	
-	*(volatile short*)GBA_REG_BG0VOFS = (ck_cam_scrolly);
-	*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
-	*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
 };
 
+void LK_MP_ResetScroll(){
+	GBA_WAIT_VBLANK
+	*(volatile short*)GBA_REG_BG0HOFS = (0);
+	*(volatile short*)GBA_REG_BG1HOFS = (0);
+	*(volatile short*)GBA_REG_BG2HOFS = (0);
+	
+	*(volatile short*)GBA_REG_BG0VOFS = (0);
+	*(volatile short*)GBA_REG_BG1VOFS = (0);
+	*(volatile short*)GBA_REG_BG2VOFS = (0);
 
+};
 
 
 

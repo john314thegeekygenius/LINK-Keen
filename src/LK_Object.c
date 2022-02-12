@@ -26,31 +26,51 @@ short ck_slopevalues[8][8] = {
 };
 
 
-void LK_PhysCollideObj(ck_object *obj,ck_object *obj2){
-	if(obj->type==ck_objShot){
-		if(obj->var4 != obj2->var4){
-			if(obj->accel_x != 0 || obj->accel_y != 0){
-				if(obj->var1==0){
-					// Hurt the player
-					ck_localGameState.ck_health[obj2->var4] -= 40;
-					obj->var1 = 0x20;
-					obj->accel_x = 0;
-					obj->accel_y = 0;
-					ck_localGameState.update_scorebox = true;
+// For physcollideobj()
+ck_animation ck_BombRemove;
+
+void LK_PhysCollideObj(ck_object *obj,ck_object *obj_hit){
+	if(obj->type==ck_objShot && obj_hit->type==ck_objPlayer){
+		if(ck_localGameState.ck_health[obj_hit->var4]>0){
+			if(obj->var4 != obj_hit->var4){
+				if(obj->accel_x != 0 || obj->accel_y != 0){
+					if(obj_hit->var1==0){
+						// Hurt the player
+						ck_localGameState.ck_health[obj_hit->var4] -= 40;
+						if(ck_localGameState.ck_health[obj_hit->var4]<0){
+							ck_localGameState.ck_lives[obj->var4] += 1; // Add a kill
+						}
+						obj->var1 = 0x20;
+						obj->accel_x = 0;
+						obj->accel_y = 0;
+						ck_localGameState.update_scorebox = true;
+					}
 				}
 			}
 		}
 	}
 
-	if(obj->type==ck_objBomb){
-		if(obj->var4 != obj2->var4){
-			if(obj->var1==0){
-				// Hurt the player
-				ck_localGameState.ck_health[obj2->var4] -= 50;
-				obj->var1  = 0x20;
-				obj->accel_x = 0;
-				obj->accel_y = 0;
-				ck_localGameState.update_scorebox = true;
+	if(obj->type==ck_objBomb && obj_hit->type==ck_objPlayer){
+		if(ck_localGameState.ck_health[obj_hit->var4]>0){
+			if(obj->var4 != obj_hit->var4){
+				if(obj_hit->var1==0 && obj->state == ck_objKill){
+					// Hurt the player
+					ck_localGameState.ck_health[obj_hit->var4] -= 50;
+					if(ck_localGameState.ck_health[obj_hit->var4]<0){
+						ck_localGameState.ck_lives[obj->var4] += 1; // Add a kill
+					}
+					obj_hit->var1  = 0x20; // Make the player flash
+					obj->var2 = 2;
+					obj->accel_x = 0;
+					obj->accel_y = 0;
+					ck_localGameState.update_scorebox = true;
+					obj->state = ck_objIdle; // It's not a deadly thihng anymore
+					obj->ck_frame = &ck_BombRemove;
+				}else{
+					// Explode the bomb
+					if(obj->var2==0)
+						obj->var2 = 1;
+				}
 			}
 		}
 	}
@@ -146,7 +166,6 @@ void LK_MapCollideObj(ck_object *obj){
 
 				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
 				
-				LK_MP_SetTile(0,0,tileTI,1);
 				// Clip with solid bottom
 				if(tileTI==0x01){
 					obj->pos_y = (TIclipY<<3)+8-(obj->clip_rects.clipY);
@@ -355,7 +374,6 @@ void LK_MapCollideBomb(ck_object *obj){
 
 				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
 				
-				LK_MP_SetTile(0,0,tileTI,1);
 				// Clip with solid bottom
 				if(tileTI==0x01){
 					obj->pos_y = (TIclipY<<3)+8-(obj->clip_rects.clipY);
@@ -451,8 +469,7 @@ void LK_LogicBomb(ck_object *obj){
 
 	obj->var1 += 1;
 
-	if(obj->ck_frame != &ck_BombAnimation){
-		
+	if(obj->var2 == 1){
 		obj->accel_y = 0;
 		obj->accel_x = 0;
 	}else{
@@ -461,9 +478,13 @@ void LK_LogicBomb(ck_object *obj){
 
 	// explode the bomb
 	if(obj->var1 == 0x40){
-		++obj->var1;
+		obj->var2 = 1;
+	}
+	if(obj->var2==1){
+		obj->var2 = 2;
 		obj->animation_tick = 0;
 		obj->ck_frame = &ck_BombExplode;
+		obj->state = ck_objKill;
 		obj->accel_x = obj->accel_y = 0;
 		LK_SD_PlaySound(CK_SND_SHOT_HIT);
 	}
@@ -475,18 +496,25 @@ void LK_LogicBomb(ck_object *obj){
 	}
 };
 
-void LK_SpawnBomb(int x,int y, int dir_x, int dir_y, int obj_id){
+void LK_SpawnBomb(int x,int y, int dir_x, int dir_y, ck_object * keenobj){
 	ck_object * obj = LK_GetNewObj(0);
 
 	obj->pos_x = x;
 	obj->pos_y = y;
 
-	obj->accel_x = dir_x*8;
+	obj->accel_x = dir_x*3;
+	if(keenobj->accel_x>0)
+		obj->accel_x += 3;
+	if(keenobj->accel_x<0)
+		obj->accel_x -= 3;
 
-	if(dir_y==0)
-		obj->accel_y = -6;
-	else
-		obj->accel_y = dir_y*10;
+	obj->accel_y = -6;
+	if(dir_y==CK_Dir_Down){
+		obj->accel_x = 0;
+		obj->accel_y = 6;
+	}else{
+		obj->accel_y += 3*dir_y;
+	}
 
 	obj->dir_x = dir_x;
 	obj->dir_y = dir_y;
@@ -498,7 +526,8 @@ void LK_SpawnBomb(int x,int y, int dir_x, int dir_y, int obj_id){
 	
 	
 	obj->var1 = 0; // bomb timer
-	obj->var4 = obj_id; // obj id
+	obj->var2 = 0; // should bomb explode
+	obj->var4 = keenobj->var4; // obj id
 
 	obj->clip_rects.clipX = 2;
 	obj->clip_rects.clipY = 2;
@@ -644,7 +673,6 @@ void LK_MapCollideShot(ck_object *obj){
 
 				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
 				
-				LK_MP_SetTile(0,0,tileTI,1);
 				// Clip with solid bottom
 				if(tileTI==0x01){
 					obj->pos_y = (TIclipY<<3)+8-(obj->clip_rects.clipY);
@@ -1280,7 +1308,7 @@ void LK_MapCollideKeen(ck_object *obj){
 	// Kill keen if outside of map
 	if(obj->pos_y+obj->clip_rects.clipY+obj->clip_rects.clipH >= (ck_level_height<<3)-12){
 		obj->pos_y = (ck_level_height<<3)-(24+obj->clip_rects.clipY+obj->clip_rects.clipH);
-		LK_KillKeen(obj);
+		LK_MurderKeen(obj);
 	}
 
 
@@ -1364,7 +1392,7 @@ void LK_MapCollideKeen(ck_object *obj){
 				TIclipY2 = (((*ck_tileinfo)[512+(tile*3)+1]))&0x7F;
 				// Stop keen from going off of pole
 				if(obj->dir_y == CK_Dir_Up){
-					if(tileTI>0x01||TIclipY2==0x01){
+					if(tileTI!=0x01||TIclipY2==0x01){
 						obj->can_climb = false;
 					}
 				}
@@ -1401,7 +1429,7 @@ void LK_MapCollideKeen(ck_object *obj){
 			// Interact with deadly
 			if(tileTI==0x03){
 				if(obj->var1==0){
-					LK_KillKeen(obj);
+					LK_MurderKeen(obj);
 				}
 			}
 
@@ -1527,6 +1555,7 @@ void LK_MapCollideKeen(ck_object *obj){
 					ck_localGameState.on_ground[obj->var4] = true;
 					if(obj->state == ck_objFalling){
 						obj->state = ck_objStanding;
+						LK_SD_PlaySound(CK_SND_LAND);
 					}
 					break; // Get out of loop
 				}
@@ -1554,6 +1583,7 @@ void LK_MapCollideKeen(ck_object *obj){
 							obj->pos_y = (TIclipY<<3)-(obj->clip_rects.clipH+obj->clip_rects.clipY-8);
 							obj->accel_y = 1;
 							ck_localGameState.on_ground[obj->var4] = false;
+							LK_SD_PlaySound(CK_SND_FALL);
 							goto skipYCheck;
 						}
 					}
@@ -1563,12 +1593,13 @@ void LK_MapCollideKeen(ck_object *obj){
     				ck_localGameState.on_ground[obj->var4] = true;
 					if(obj->state == ck_objFalling){
 						obj->state = ck_objStanding;
+						LK_SD_PlaySound(CK_SND_LAND);
 					}
 					break; // Get out of loop
 				}
 				// Kill Keen
 				if(tileTI==0x09 || tileTI2 == 0x03){
-					LK_KillKeen(obj);
+					LK_MurderKeen(obj);
 				}
 
 			}
@@ -1614,7 +1645,6 @@ skipYCheck:
 
 				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
 				
-				LK_MP_SetTile(0,0,tileTI,1);
 				// Clip with solid bottom
 				if(tileTI==0x01){
 					obj->pos_y = (TIclipY<<3)+8-(obj->clip_rects.clipY);
@@ -1653,7 +1683,7 @@ skipYCheck:
 						obj->state = ck_objStanding;
 									
 					// Grab hold of side
-					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground&&obj->can_grab){
+					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground&&obj->can_grab==1){
 						TIclipY -= 1;
 						tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 						tileTI = (*ck_tileinfo)[512+(tile*3)];
@@ -1706,7 +1736,7 @@ skipYCheck:
 						obj->state = ck_objStanding;
 
 					// Grab hold of side
-					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground&&obj->can_grab){
+					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground&&obj->can_grab==1){
 						TIclipY -= 1;
 						tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 						tileTI = (*ck_tileinfo)[512+(tile*3)];
@@ -1852,7 +1882,18 @@ void LK_DrawKeen(ck_object *obj){
 			GBA_SET_FLIPH(obj->spr_id3,1)
 		}
 	}
-	
+
+	// play walking sound?
+	if(obj->state==ck_objWalking || obj->state==ck_objEnterDoor){
+		if(obj->animation_tick&1){
+			obj->int1 = !obj->int1;
+			if(obj->int1 == 1){
+				LK_SD_PlaySound(CK_SND_WALK1);
+			}else{
+				LK_SD_PlaySound(CK_SND_WALK2);
+			}
+		}
+	}
 	if(obj->ck_frame == &ck_KeenLookUp || obj->ck_frame == &ck_KeenShootUp || 
 		obj->ck_frame == &ck_KeenJumpShootUp || obj->ck_frame == &ck_KeenShootDown||
 		obj->ck_frame == &ck_KeenSlide1 || obj->ck_frame == &ck_KeenSlide2 || obj->ck_frame == &ck_KeenSlide3 || obj->ck_frame == &ck_KeenSlide4){
@@ -1865,6 +1906,20 @@ void LK_DrawKeen(ck_object *obj){
 
 void LK_KillKeen(ck_object *obj){
 	if(obj->type != ck_objPlayer) return;
+//	if(ck_localGameState.godmode) return; // We invincable!
+	if(obj->state != ck_objDead){
+		obj->state = ck_objDead;
+		obj->var2 = 0x20;
+		obj->animation_tick = 0;
+		obj->ck_frame = &ck_KeenDie;
+		obj->frozen = true;
+		ck_localGameState.update_scorebox = true;
+		LK_SD_PlaySound(CK_SND_DIE);
+	}
+};
+
+void LK_MurderKeen(ck_object *obj){
+	if(obj->type != ck_objPlayer) return;
 	// No?
 //	if(obj->var1) return; // We invincable!
 	if(obj->state != ck_objDead){
@@ -1875,11 +1930,17 @@ void LK_KillKeen(ck_object *obj){
 		obj->ck_frame = &ck_KeenDie;
 		obj->frozen = true;
 		ck_localGameState.update_scorebox = true;
+		LK_SD_PlaySound(CK_SND_DIE);
 	}
 };
 
+
 void LK_LogicKeen(ck_object *obj){
-	obj->can_grab = true;
+	if(obj->can_grab == 2){
+		obj->can_grab = 0;
+	}else{
+		obj->can_grab = 1;
+	}
 	if(obj->var1){
 		obj->var1 -= 1;
 	}
@@ -2048,7 +2109,7 @@ void LK_LogicKeen(ck_object *obj){
 
 		if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
 			obj->dir_y = CK_Dir_Up;
-			obj->can_grab = false;
+			obj->can_grab = 0;
 			// Start jumping
 			obj->state = ck_objJumping;
 			obj->animation_tick = 0;
@@ -2152,17 +2213,17 @@ void LK_LogicKeen(ck_object *obj){
 				ck_localGameState.thrown_bomb[obj->var4] = true;
 				if(obj->dir_x == CK_Dir_Left){
 					if(ck_localGameState.ck_bombs[obj->var4])
-						LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x, vdir,obj->var4);
+						LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x, vdir,obj);
 				}
 				if(obj->dir_x == CK_Dir_Right){
 					if(ck_localGameState.ck_bombs[obj->var4])
-						LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x, vdir,obj->var4);
+						LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x, vdir,obj);
 				}
 			}
 			if(obj->ck_frame == & ck_KeenPoleThrowDown2){
 				ck_localGameState.thrown_bomb[obj->var4] = true;
 				if(ck_localGameState.ck_bombs[obj->var4])
-					LK_SpawnBomb(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4);
+					LK_SpawnBomb(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj);
 			}
 			if(ck_localGameState.thrown_bomb[obj->var4]){
 				if(ck_localGameState.ck_bombs[obj->var4]){
@@ -2212,9 +2273,11 @@ void LK_LogicKeen(ck_object *obj){
 				obj->animation_tick = 0;
 				obj->ck_frame = &ck_KeenFall;
 				obj->frozen = false;
-				obj->can_grab = false;
-				// Play fall sound
-				LK_SD_PlaySound(CK_SND_FALL);
+				if(obj->can_grab==1){
+					obj->can_grab = 2;
+					// Play fall sound
+					LK_SD_PlaySound(CK_SND_FALL);
+				}
 			}
 		}
 		if(obj->frozen)
@@ -2420,28 +2483,28 @@ void LK_LogicKeen(ck_object *obj){
 				ck_localGameState.thrown_bomb[obj->var4] = true;
 				if(obj->dir_x == CK_Dir_Left){
 					if(ck_localGameState.ck_bombs[obj->var4])
-						LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x, vdir,obj->var4);
+						LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x, vdir,obj);
 				}
 				if(obj->dir_x == CK_Dir_Right){
 					if(ck_localGameState.ck_bombs[obj->var4])
-						LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x, vdir,obj->var4);
+						LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x, vdir,obj);
 				}
 			}
 			if(obj->ck_frame == & ck_KeenJumpThrow2){
 				ck_localGameState.thrown_bomb[obj->var4] = true;
 				if(obj->dir_x == CK_Dir_Left){
 					if(ck_localGameState.ck_bombs[obj->var4])
-						LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x,vdir,obj->var4);
+						LK_SpawnBomb(obj->pos_x-8,obj->pos_y,obj->dir_x,vdir,obj);
 				}
 				if(obj->dir_x == CK_Dir_Right){
 					if(ck_localGameState.ck_bombs[obj->var4])
-						LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x,vdir,obj->var4);
+						LK_SpawnBomb(obj->pos_x+16,obj->pos_y,obj->dir_x,vdir,obj);
 				}
 			}
 			if(obj->ck_frame == & ck_KeenJumpThrowDown2){
 				ck_localGameState.thrown_bomb[obj->var4] = true;
 				if(ck_localGameState.ck_bombs[obj->var4])
-					LK_SpawnBomb(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4);
+					LK_SpawnBomb(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj);
 			}
 			if(ck_localGameState.thrown_bomb[obj->var4]){
 				if(ck_localGameState.ck_bombs[obj->var4]){
@@ -2575,7 +2638,7 @@ void LK_LogicKeen(ck_object *obj){
 
 	if(ck_localGameState.ck_keeninputs[obj->var4] & CK_GBA_BUTTON_SET[ck_localGameState.jump_set]){
 		obj->dir_y = CK_Dir_Up;
-		obj->can_grab = false;
+		obj->can_grab = 0;
 		// Start jumping
 		if(obj->state == ck_objStanding || obj->state == ck_objWalking){
 			obj->state = ck_objJumping;
@@ -2618,19 +2681,6 @@ void LK_LogicKeen(ck_object *obj){
 		}
 	}
 
-	// Make keen move
-
-	if(obj->accel_y > 20)
-		obj->accel_y = 20;
-
-	if(obj->accel_y < -20)
-		obj->accel_y = -20;
-
-	if(obj->accel_x > 4)
-		obj->accel_x = 4;
-
-	if(obj->accel_x < -4)
-		obj->accel_x = -4;
 
 };
 
@@ -2648,6 +2698,21 @@ void LK_UpdateKeen(ck_object *obj){
 	short absAccelY = GBA_ABS(obj->accel_y);
 	short oldAccelY;
 	int a;
+
+	// Keep keen from going too fast
+	if(obj->accel_y > 20)
+		obj->accel_y = 20;
+
+	if(obj->accel_y < -20)
+		obj->accel_y = -20;
+
+	if(obj->accel_x > 4)
+		obj->accel_x = 4;
+
+	if(obj->accel_x < -4)
+		obj->accel_x = -4;
+
+
 	if(obj->frozen) return; // Don't change anything!
 	if(absAccelY>=8){
 		oldAccelY = obj->accel_y;
@@ -2666,7 +2731,7 @@ void LK_UpdateKeen(ck_object *obj){
 		LK_MapCollideKeen(obj);
 		obj->pos_y += obj->accel_y;
 	}
-	if(obj->frozen2) return; // Don't change anything!
+	if(obj->frozen2) goto endupdatefun; // Don't change anything!
 	obj->accel_y += 1;
 
 	if(obj->can_move==false)
@@ -2687,13 +2752,14 @@ void LK_UpdateKeen(ck_object *obj){
 			}
 		}
 	}
+endupdatefun:
 	if(obj->var4 == GBA_SerialID){
 		globalCK_X = obj->pos_x;
 		globalCK_Y = obj->pos_y;
 		
 		globalCK_Vel = obj->accel_y;
 		
-		if(ck_localGameState.on_ground[obj->var4] || obj->frozen || obj->can_move == false){
+		if(ck_localGameState.on_ground[obj->var4] || obj->frozen || obj->frozen2 || obj->can_move == false){
 			globalCK_UpdateCam = 1;
 		}else{
 			globalCK_UpdateCam = 0;
@@ -2831,11 +2897,12 @@ void LK_RemoveNonKeenObjs(){
 
 boolean LK_ObjInObj(ck_object *obj1, ck_object *obj2){
 	// Return true if object collision box is inside other box
-	if( obj1->pos_x+obj1->clip_rects.clipX +obj1->clip_rects.clipW >= obj2->pos_x + obj2->clip_rects.clipX &&
-		obj1->pos_x+obj1->clip_rects.clipX < obj2->pos_x + obj2->clip_rects.clipX +obj2->clip_rects.clipW &&
-		obj1->pos_y+obj1->clip_rects.clipY +obj1->clip_rects.clipH >= obj2->pos_y + obj2->clip_rects.clipY &&
-		obj1->pos_y+obj1->clip_rects.clipY < obj2->pos_y + obj2->clip_rects.clipY +obj2->clip_rects.clipH)
+	if( obj1->pos_x+obj1->clip_rects.clipX + obj1->clip_rects.clipW >= obj2->pos_x + obj2->clip_rects.clipX &&
+		obj1->pos_x+obj1->clip_rects.clipX <= obj2->pos_x + obj2->clip_rects.clipX +obj2->clip_rects.clipW &&
+		obj1->pos_y+obj1->clip_rects.clipY + obj1->clip_rects.clipH >= obj2->pos_y + obj2->clip_rects.clipY &&
+		obj1->pos_y+obj1->clip_rects.clipY <= obj2->pos_y + obj2->clip_rects.clipY + obj2->clip_rects.clipH){
 		return true;
+	}
 	return false;
 };
 

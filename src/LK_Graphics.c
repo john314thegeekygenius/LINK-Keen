@@ -13,7 +13,9 @@
 #include "CK_Data/mort_sheet.h"
 #include "CK_Data/lindsay_sheet.h"
 #include "CK_Data/spot_sheet.h"
+#include "CK_Data/barker_sheet.h"
 #include "CK_Data/blaster_sheet.h"
+
 
 // Intro screens
 #include "CK_Data/tilescreen.h"
@@ -56,13 +58,13 @@ volatile uint16_t* GBA_BG0_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(0);
 volatile uint16_t* GBA_BG0_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(16);
 
 volatile uint16_t* GBA_BG1_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(1);
-volatile uint16_t* GBA_BG1_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(17);
+volatile uint16_t* GBA_BG1_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(18);
 
 volatile uint16_t* GBA_BG2_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(2);
-volatile uint16_t* GBA_BG2_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(18);
+volatile uint16_t* GBA_BG2_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(20);
 
 volatile uint16_t* GBA_BG3_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(3);
-volatile uint16_t* GBA_BG3_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(19);
+volatile uint16_t* GBA_BG3_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(22);
 
 volatile uint16_t* GBA_BG_Palette = (uint16_t*)GBA_PAL_BG_START;
 
@@ -116,6 +118,7 @@ void LK_CA_CopySpriteSheet(){
 void LK_CA_SetPlayerSprite(int sprId, int sheetId){
 	uint16_t *data = NULL;
 	return; // This should never be used??
+	/*
 	switch(sheetId){
 		case 0:
 		data = (uint16_t*)&keen_sheet_data;
@@ -130,6 +133,9 @@ void LK_CA_SetPlayerSprite(int sprId, int sheetId){
 		data = (uint16_t*)&spot_sheet_data;
 		break;
 		case 4:
+		data = (uint16_t*)&barker_sheet_data;
+		break;
+		case 5:
 		data = (uint16_t*)&blaster_sheet_data;
 		break;
 		default:
@@ -137,6 +143,7 @@ void LK_CA_SetPlayerSprite(int sprId, int sheetId){
 		break;
 	}
 	GBA_DMA_Copy16((uint16_t*)GBA_SPRGFX_START+sprId,data,(keen_sheet_size)>>1);
+*/
 };
 
 
@@ -193,6 +200,9 @@ void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int 
 		data = (uint16_t*)&spot_sheet_data;
 		break;
 		case 4:
+		data = (uint16_t*)&barker_sheet_data;
+		break;
+		case 5:
 		data = (uint16_t*)&blaster_sheet_data;
 		break;
 		

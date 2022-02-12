@@ -169,6 +169,7 @@ void LK_MP_UpdateCamera();
 void LK_MP_LoadMap(uint16_t mapid);
 void LK_MP_UpdateMap();
 void LK_MP_RenderMap();
+void LK_MP_ResetScroll();
 
 // Physics
 

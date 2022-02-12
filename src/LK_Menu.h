@@ -24,6 +24,7 @@ typedef enum {
 	ck_CNBombs,
 	ck_CNShots,
 	ck_CNLives,
+	ck_CScorebox,
 }ck_MenuNames;
 
 typedef struct ck_Folder {
@@ -37,6 +38,9 @@ typedef struct ck_Folder {
 
 char *LK_US_Itoa(short v);
 char *LK_US_uItoa(unsigned short v);
+
+char *LK_US_Htoa16(short v);
+char *LK_US_Htoa32(int v);
 
 extern uint16_t US_TextX ;
 extern uint16_t US_TextY ;

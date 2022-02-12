@@ -607,7 +607,7 @@ typedef struct GBA_SoundSample {
 
 void GBA_PlaySample(GBA_SoundSample *sample, char loop, char channel);
 void GBA_StopChannel(char channel);
-
+int GBA_SamplePlaying(int channel);
 
 ////////// Sound Mixer
 
@@ -710,9 +710,13 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_COM_BAUD_57600 0x02
 #define GBA_COM_BAUD_115200 0x03
 
-#define GBA_SERIAL_TIMEOUT 0x100
+#define GBA_SERIAL_TIMEOUT 0x500 // ~ 5 seconds???
 
 #define GBA_SI_TERMINAL 0x04 // READ ONLY
+
+#define GBA_LINK_ERROR     0x01
+#define GBA_TIMEOUT_ERROR  0x02
+
 
 // Returns 0 if error, 1 if all GBAs ready
 #define GBA_COM_STATUS 0x08 // READ ONLY

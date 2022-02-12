@@ -25,6 +25,8 @@ typedef struct ck_gameState {
 	boolean player_connected[4]; // Is the player still connected
 	
 	boolean update_scorebox; // Does the scorebox need redrawn?
+	unsigned short ck_status_type; // What type of scorebox should be drawn
+	unsigned short ck_status_loc; // Where should the scorebox be drawn
 	
 	// Keen stuff
 	short ck_shots[4]; // How many shots does the player have
@@ -53,17 +55,6 @@ typedef struct ck_gameState {
 
 }ck_gameState;
 
-
-// Move to LK_Net.c ??
-#define CK_LOCATE_PACKET 0x4401
-#define CK_HANDSHAKE_PACKET 0x4403
-#define CK_DATA_PACKET 0x2000
-
-#define CK_INPUT_PACKET 0x8000
-#define CK_SUCCESS_PACKET 0xC000
-
-#define CK_QUIT_MATCH 0xF0F0
-#define CK_ABORT_PACKET 0xA0A0
 
 extern ck_gameState ck_localGameState;
 

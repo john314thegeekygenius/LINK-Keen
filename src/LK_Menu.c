@@ -20,13 +20,13 @@
 // Define some menus
 
 
-char* ck_SNewGame[] = {"Start Solo","Join Game","Character","Map","Game Settings"};
-char* ck_SOptions[] = {"Music","Sound","Controls"};
+char* ck_SNewGame[] = {"Start Solo","Start Multi","Character","Map","Game Settings"};
+char* ck_SOptions[] = {"Music","Sound","Controls","Scorebox"};
 char* ck_SGame[]    = {"Num Players","Num Bombs","Num Shots","Num Lives"};
 char* ck_SMainMenu[] = {"New Game","Options","Send Game"};
 
 char ck_BNewGame[] = {1,0,1,1,1};
-char ck_BOptions[] = {1,1,1};
+char ck_BOptions[] = {1,1,1,1};
 char ck_BGame[] = {1,1,1,1};
 char ck_BMainMenu[] = {1,1,0};
 
@@ -65,13 +65,15 @@ ck_Folder ck_FSound  = {ck_CSound, NULL,  NULL,  0, &ck_FOptions,
 	{NULL}};
 ck_Folder ck_FControls  = {ck_CControls, NULL,  NULL,  0, &ck_FOptions,
 	{NULL}};
+ck_Folder ck_FScorebox  = {ck_CScorebox, NULL,  NULL,  0, &ck_FOptions,
+	{NULL}};
 
 
 ck_Folder ck_FNewGame  = {ck_CNewGame, &ck_BNewGame,  &ck_SNewGame,  5, &ck_FMainMenu,
 	{&ck_FSoloGame, &ck_FJoinGame, &ck_FCharacter, &ck_FMap, &ck_FSettings, NULL}};
 
-ck_Folder ck_FOptions  = {ck_COptions, &ck_BOptions,  &ck_SOptions,  3, &ck_FMainMenu,
-	{&ck_FMusic,&ck_FSound,&ck_FControls,NULL}};
+ck_Folder ck_FOptions  = {ck_COptions, &ck_BOptions,  &ck_SOptions,  4, &ck_FMainMenu,
+	{&ck_FMusic,&ck_FSound,&ck_FControls,&ck_FScorebox,NULL}};
 
 ck_Folder ck_FSendGame  = {ck_CSendGame, NULL,  NULL,  0, &ck_SMainMenu,
 	{NULL}};
@@ -172,6 +174,38 @@ char *LK_US_uItoa(unsigned short v){
 	return US_Itoa_String;
 };
 
+
+char *LK_US_Htoa16(short v){
+	int i, o, shf;
+	o = 0;
+	shf = 12;
+	while(shf>=0){
+		for(i = 0; i < 16; i ++)
+			if(((v>>shf)&0xF) == i)
+				US_Itoa_String[o++] = "0123456789ABCDEF"[i];
+		shf -= 4;
+	}
+	US_Itoa_String[o] = 0; // Terminate the string
+
+	return US_Itoa_String;
+};
+
+char *LK_US_Htoa32(int v){
+	int i, o, shf;
+	o = 0;
+	shf = 28;
+	while(shf>=0){
+		for(i = 0; i < 16; i ++)
+			if(((v>>shf)&0xF) == i)
+				US_Itoa_String[o++] = "0123456789ABCDEF"[i];
+		shf -= 4;
+	}
+	US_Itoa_String[o] = 0; // Terminate the string
+
+	return US_Itoa_String;
+};
+
+
 void LK_US_PrintXY(char *str){
 	if(str==NULL) return;
 	// Shift the y position
@@ -257,6 +291,8 @@ void LK_US_ResetTiles(){
 	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_32x32);
 	
 	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_32x32);
+	
+	LK_MP_ResetScroll();
 };
 
 void LK_US_ThrowError(char *str){
@@ -286,9 +322,28 @@ uint16_t playerSpriteT = 0, playerSpriteB;
 
 // Draws the control pannel
 void LK_US_DrawControlPannel(){
-	int i = 0;
+	int i = 0, gamelaunched = 0;
 	char **map_data;
-
+/*
+	if(ck_localGameState.multiplayerAvailable){
+		gamelaunched = 0;
+		for(i = 0; i < 4; i++){
+			if((GBA_SerialData[i] & 0xFF00) == CK_LOCATE_PACKET){
+				gamelaunched = 1;
+				ck_localGameState.num_players = GBA_SerialData[i] & 0xFF;
+			}
+		}
+		if(gamelaunched){
+			ck_SNewGame[1] = "Join Game";
+			ck_ControlPannelDrawn = false;
+		}else{
+			ck_SNewGame[1] = "Start Multi";
+		}
+	}*/
+	if(GBA_SerialID!=0){
+		ck_SNewGame[1] = "Join Game";
+	}
+	
 	if(ck_ControlPannelDrawn==false){
 		// Check for multiplayer
 		if(ck_localGameState.multiplayerAvailable){
@@ -302,6 +357,7 @@ void LK_US_DrawControlPannel(){
 			ck_BMainMenu[2] = 0;
 			ck_BNewGame[1] = 0;
 		}
+		
 		
 		// Copy the tileset into the block
 //		GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)cwrist_tiles_data,(cwrist_tiles_size)>>1);
@@ -335,6 +391,7 @@ void LK_US_DrawControlPannel(){
 			case ck_CMusic:
 			case ck_CSound:
 			case ck_CControls:
+			case ck_CScorebox:
 			case ck_COptions:
 			for(i = 0; i < 6; i++)
 				GBA_BG0_Map[167+i] = 109+i;
@@ -384,6 +441,8 @@ void LK_US_DrawControlPannel(){
 			US_TextX = 7; US_TextY = 14;
 			if(ck_localGameState.multiplayerAvailable){
 				LK_US_PrintXY("Link Connected");
+//				US_TextX = 7; US_TextY = 15;
+//				LK_US_PrintXY(LK_US_Itoa(GBA_SerialID));
 			}
 		}
 
@@ -418,6 +477,7 @@ void LK_US_DrawControlPannel(){
 		}else{
 			// Try to find any GBAs connected
 			GBA_FindGBAs();
+			ck_ControlPannelDrawn = false;
 		}
 	}
 
@@ -708,6 +768,96 @@ void LK_US_DrawControlPannel(){
 				LK_US_PrintXY("Sound Disabled");
 			}
 		break;
+		case ck_CScorebox:
+
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 7; US_TextY = 9;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Score box");
+			US_TextX = 12; US_TextY = 8;
+			if(ck_localGameState.ck_status_type==0){
+				LK_US_PrintXY("None");
+			}else if(ck_localGameState.ck_status_type==1){
+				LK_US_PrintXY("Normal");
+			}else if(ck_localGameState.ck_status_type==2){
+				LK_US_PrintXY("Condensed");
+			}
+			US_TextX = 9; US_TextY = 9;
+			if(ck_localGameState.ck_status_loc==0){
+				LK_US_PrintXY("Top");
+			}else {
+				LK_US_PrintXY("Bottom");
+			}
+
+			// Clear the last position
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			LK_US_PrintGlyph(ck_selectorGlyph);
+
+			if(ck_lastInput & GBA_BUTTON_UP){
+				ck_selectorY  -= 1;
+				// Clear the flag
+				ck_lastInput = 0;
+			}
+			if(ck_lastInput & GBA_BUTTON_DOWN){
+				ck_selectorY  += 1;
+				// Clear the flag
+				ck_lastInput = 0;
+			}
+
+			if(ck_selectorY < 0){
+				ck_selectorY = 0;
+			}
+			if(ck_selectorY >= 1){
+				ck_selectorY = 1;
+			}
+
+			// Get the old glyph
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			ck_selectorGlyph = LK_US_GetGlyph();
+
+			// Draw the selector
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			LK_US_PrintGlyph(ck_selectorGlyph+1);
+
+			if(ck_selectorY == 0){
+				ck_selectorX = ck_localGameState.ck_status_type;
+				if(ck_lastInput & GBA_BUTTON_LEFT){
+					ck_selectorX  -= 1;
+					if(ck_selectorX<0) ck_selectorX = 0;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				if(ck_lastInput & GBA_BUTTON_RIGHT){
+					ck_selectorX  += 1;
+					if(ck_selectorX>2) ck_selectorX = 2;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.ck_status_type = ck_selectorX;
+			}else{
+				ck_selectorX = ck_localGameState.ck_status_loc;
+				if(ck_lastInput & GBA_BUTTON_LEFT){
+					ck_selectorX  -= 1;
+					if(ck_selectorX<0) ck_selectorX = 0;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				if(ck_lastInput & GBA_BUTTON_RIGHT){
+					ck_selectorX  += 1;
+					if(ck_selectorX>1) ck_selectorX = 1;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.ck_status_loc = ck_selectorX;
+			}
+		break;
 		case ck_CControls:
 			if(ck_lastInput & GBA_BUTTON_UP){
 				ck_selectorY  -= 1;
@@ -864,6 +1014,7 @@ void LK_US_DrawControlPannel(){
 					return;
 				}else{
 					LK_SD_PlaySound(CK_SND_NO_WAY);
+					ck_lastInput = 0;
 				}
 			}
 
@@ -891,10 +1042,11 @@ void LK_US_ResetControlPannel(){
 	ck_selectorX = 0;
 	ck_ControlPannelMenu = &ck_FMainMenu;
 	ck_selectorGlyph = 11;
+	LK_MP_ResetScroll();
 };
 
 void LK_US_ResetROM(){
-	int i;
+	int i, tmpA;
 	// Get rid of any sound
 	LK_SD_StopMusic();
 	LK_SD_StopSounds();
@@ -906,11 +1058,23 @@ void LK_US_ResetROM(){
 	
 	// Fix the menu stuff
 	LK_US_ResetControlPannel();
+
+	// Store the current availablility of multiplayer
+	tmpA = ck_localGameState.multiplayerAvailable;
+
 	// Set the default game state
 	LK_ResetGameState();
 
 	// Try to find any GBAs connected
 	//GBA_FindGBAs();
+
+	// Fix connection
+	ck_localGameState.multiplayerAvailable = tmpA;
+	ck_localGameState.multiplayerGame = false;
+	if(GBA_NGameBoysConnected > 2){
+		ck_localGameState.num_players = GBA_NGameBoysConnected;
+	}
+
 };
 
 

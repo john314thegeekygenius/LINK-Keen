@@ -12,6 +12,8 @@
 #include "LK_Graphics.h"
 #include "LK_Object.h"
 #include "LK_Map.h"
+#include "LK_Net.h"
+
 // Audio stuff
 #include "LK_Sound.h"
 #include "LK_Audio.h"
