@@ -32,4 +32,4 @@ You can set the number of players in the Game Settings menu, but it will automat
 # Multi-boot
 I'd like to get this working, but I can't find any documentation on it. If you found this and you know how to send ROMs to GBAs, please get in touch with me.
 
-
+john314thegeekygenius@gmail.com
