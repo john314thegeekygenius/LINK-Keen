@@ -7,6 +7,13 @@
 #include "ck_map2.h"
 
 
+// Define music ids
+const uint16_t ck_map0_music = 0;
+const uint16_t ck_map1_music = 1;
+const uint16_t ck_map2_music = 2;
+
+
+// Define map info
 const char *ck_map0_info[] = {
 	"Test map 0",
 	"By John314",
@@ -22,7 +29,7 @@ const char *ck_map1_info[] = {
 const char *ck_map2_info[] = {
 	"QED Arena",
 	"By Mink",
-	"64 x 48"
+	"64 x 45"
 };
 
 const uint16_t *ck_levels_data[] = {
