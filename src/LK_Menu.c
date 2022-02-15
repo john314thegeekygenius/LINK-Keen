@@ -21,17 +21,17 @@
 
 
 char* ck_SNewGame[] = {"Start Solo","Start Multi","Character","Map","Game Settings"};
-char* ck_SOptions[] = {"Music","Sound","Controls","Scorebox"};
+char* ck_SOptions[] = {"Music","Sound","Controls","Scorebox","Link Settings"};
 char* ck_SGame[]    = {"Num Players","Num Bombs","Num Shots","Num Lives"};
-char* ck_SMainMenu[] = {"New Game","Options","Send Game"};
+char* ck_SMainMenu[] = {"New Game","Options","Reconnect","Send Game"};
 
 char ck_BNewGame[] = {1,0,1,1,1};
-char ck_BOptions[] = {1,1,1,1};
+char ck_BOptions[] = {1,1,1,1,1};
 char ck_BGame[] = {1,1,1,1};
-char ck_BMainMenu[] = {1,1,0};
+char ck_BMainMenu[] = {1,1,1,0};
 
 
-ck_Folder ck_FMainMenu,ck_FNewGame,ck_FOptions,ck_FSettings,
+ck_Folder ck_FMainMenu,ck_FNewGame,ck_FOptions,ck_FSettings,ck_FReconnect,ck_FSendGame,
 			ck_FNPlayers, ck_FNBombs, ck_FNShots, ck_FNLives;
 
 //////// New Game
@@ -67,19 +67,25 @@ ck_Folder ck_FControls  = {ck_CControls, NULL,  NULL,  0, &ck_FOptions,
 	{NULL}};
 ck_Folder ck_FScorebox  = {ck_CScorebox, NULL,  NULL,  0, &ck_FOptions,
 	{NULL}};
+ck_Folder ck_FLinkSettings  = {ck_CLinkSettings, NULL,  NULL,  0, &ck_FOptions,
+	{NULL}};
+
+
+ck_Folder ck_FMainMenu = {ck_CMainMenu,&ck_BMainMenu, &ck_SMainMenu, 4, NULL,
+	{&ck_FNewGame, &ck_FOptions, &ck_FReconnect, &ck_FSendGame, NULL}};
 
 
 ck_Folder ck_FNewGame  = {ck_CNewGame, &ck_BNewGame,  &ck_SNewGame,  5, &ck_FMainMenu,
 	{&ck_FSoloGame, &ck_FJoinGame, &ck_FCharacter, &ck_FMap, &ck_FSettings, NULL}};
 
 ck_Folder ck_FOptions  = {ck_COptions, &ck_BOptions,  &ck_SOptions,  4, &ck_FMainMenu,
-	{&ck_FMusic,&ck_FSound,&ck_FControls,&ck_FScorebox,NULL}};
+	{&ck_FMusic,&ck_FSound,&ck_FControls,&ck_FScorebox,&ck_FLinkSettings,NULL}};
 
-ck_Folder ck_FSendGame  = {ck_CSendGame, NULL,  NULL,  0, &ck_SMainMenu,
+ck_Folder ck_FReconnect  = {ck_CReconnect, NULL,  NULL,  0, &ck_FMainMenu,
 	{NULL}};
 
-ck_Folder ck_FMainMenu = {ck_CMainMenu,&ck_BMainMenu, &ck_SMainMenu, 3, NULL,
-	{&ck_FNewGame, &ck_FOptions, &ck_FSendGame, NULL}};
+ck_Folder ck_FSendGame  = {ck_CSendGame, NULL,  NULL,  0, &ck_FMainMenu,
+	{NULL}};
 
 
 boolean ck_ControlPannelDrawn = false;
@@ -295,6 +301,14 @@ void LK_US_ResetTiles(){
 	LK_MP_ResetScroll();
 };
 
+void LK_US_ClearScreen(){
+	// Render a cyan screen
+	GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0x96,32*32);
+	GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*32);
+	GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*32);
+	GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0,32*32);
+};
+
 void LK_US_ThrowError(char *str){
 	int button = 0;
 	
@@ -302,12 +316,9 @@ void LK_US_ThrowError(char *str){
 	GBA_UPDATE_SPRITES()
 
 	LK_US_ResetTiles();
+	
+	LK_US_ClearScreen();
 
-	// Render a cyan screen with text
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0x96,32*32);
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*32);
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*32);
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0,32*32);
 	US_TextX = 15-((GBA_StrLen(str)>>1)+1); US_TextY = 8;
 	LK_US_TextBox(str);
 	
@@ -342,8 +353,11 @@ void LK_US_DrawControlPannel(){
 	}*/
 	if(GBA_SerialID!=0){
 		ck_SNewGame[1] = "Join Game";
+	}else{
+		// Update the network
+		GBA_UpdateSerial();
 	}
-	
+		
 	if(ck_ControlPannelDrawn==false){
 		// Check for multiplayer
 		if(ck_localGameState.multiplayerAvailable){
@@ -354,7 +368,7 @@ void LK_US_DrawControlPannel(){
 				ck_BNewGame[1] = 0; // :( no one to play with
 			}
 		}else{
-			ck_BMainMenu[2] = 0;
+			ck_BMainMenu[3] = 0;
 			ck_BNewGame[1] = 0;
 		}
 		
@@ -392,6 +406,8 @@ void LK_US_DrawControlPannel(){
 			case ck_CSound:
 			case ck_CControls:
 			case ck_CScorebox:
+			case ck_CLinkSettings:
+			case ck_CReconnect:
 			case ck_COptions:
 			for(i = 0; i < 6; i++)
 				GBA_BG0_Map[167+i] = 109+i;
@@ -474,10 +490,6 @@ void LK_US_DrawControlPannel(){
 			// Clear the flag
 			ck_lastInput = 0;
 			return;
-		}else{
-			// Try to find any GBAs connected
-			GBA_FindGBAs();
-			ck_ControlPannelDrawn = false;
 		}
 	}
 
@@ -488,6 +500,9 @@ void LK_US_DrawControlPannel(){
 			LK_InitGame(true);
 		break;
 		case ck_CJoinGame:
+			LK_US_ClearScreen();
+			US_TextX = 3; US_TextY = 8;
+			LK_US_TextBox("Waiting for match...");
 			LK_InitGame(false);
 		break;
 		case ck_CSetup:
@@ -730,6 +745,68 @@ void LK_US_DrawControlPannel(){
 				LK_US_PrintXY(map_data[2]);
 			}
 			ck_localGameState.level_id = ck_mapSelected;
+
+		break;
+
+		case ck_CLinkSettings:
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Ms per packet");
+			US_TextX = 12; US_TextY = 8;
+			LK_US_PrintXY(LK_US_Itoa(GBA_SerialWaitTime));
+			ck_selectorX = GBA_SerialWaitTime;
+			if(ck_lastInput & GBA_BUTTON_LEFT){
+				ck_selectorX  -= 5;
+				if(ck_selectorX<0) ck_selectorX = 0;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			if(ck_lastInput & GBA_BUTTON_RIGHT){
+				ck_selectorX  += 5; // No upper limit???
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			GBA_SerialWaitTime = ck_selectorX;
+
+		break;
+		case ck_CReconnect:
+			// Try to connect
+			GBA_RepairConnection();
+			GBA_UpdateSerial();
+		
+			if(ck_ControlPannelMenu->returnto!=NULL){
+				GBA_ResetSprites();
+				// Go into the folder
+				ck_ControlPannelMenu = ck_ControlPannelMenu->returnto;
+				// Reset some variables
+				ck_selectorY = 0;
+				ck_selectorGlyph = 11;
+				// We need to redraw the scene
+				ck_ControlPannelDrawn = false;
+				// We might need to redraw the character later
+				ck_DrawnCharacter = false;
+				// Clear the flag
+				ck_lastInput = 0;
+				return;
+			}
+			/*
+			// Draw some UI
+			US_TextX = 8; US_TextY = 9;
+			if(ck_lastInput & GBA_BUTTON_A){
+				LK_US_PrintXY("Checking...");
+				// Try to reconnect
+				GBA_RepairConnection();
+				GBA_UpdateSerial();
+				ck_ControlPannelDrawn = false;
+				// Clear the flag
+				ck_lastInput = 0;
+			}else{
+				LK_US_PrintXY("Press A");
+			}*/
 
 		break;
 
@@ -1001,7 +1078,7 @@ void LK_US_DrawControlPannel(){
 				ck_lastInput = 0;
 			}
 			if(ck_lastInput & GBA_BUTTON_A){
-				if(ck_ControlPannelMenu->available[ck_selectorY]==1){
+				if(ck_ControlPannelMenu->available[ck_selectorY]==1 && ck_ControlPannelMenu->folders[ck_selectorY]!=NULL){
 					// Go into the folder
 					ck_ControlPannelMenu = ck_ControlPannelMenu->folders[ck_selectorY];
 					// Reset some variables

@@ -11,7 +11,7 @@
 
 
 // Local map
-unsigned char ck_levelbuff[MAX_LEVEL_WIDTH*MAX_LEVEL_HEIGHT*2];
+uint16_t ck_levelbuff[MAX_LEVEL_WIDTH*MAX_LEVEL_HEIGHT*2];
 uint16_t ck_map_animations[MAX_LEVEL_ANIMATIONS*2];
 
 uint16_t * ck_level_data;
@@ -163,13 +163,13 @@ void LK_MP_LoadMap(uint16_t mapid){
 			
 		}
 		// Add background animations
-		if((*ck_tileinfo)[(ck_levelbuff[i]*3)+2]){
+		if((*ck_tileinfo)[ck_levelbuff[i]]>>9){
 			ck_map_animations[(animationID<<1)] = i;
 			ck_map_animations[(animationID<<1)+1] = 0; // set time to 0
 			animationID ++;
 		}
 		// Add foreground animations
-		if((*ck_tileinfo)[512+(ck_levelbuff[i+ck_level_size]*3)+2]){
+		if((*ck_tileinfo)[256+(ck_levelbuff[i+ck_level_size]*3)+2]>>9){
 			ck_map_animations[(animationID<<1)] = i;
 			ck_map_animations[(animationID<<1)+1] = 0x8000; // set time to 0
 			animationID ++;
@@ -272,7 +272,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 	
 
 	// Copy the tileset into first block
-	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,16384);
+	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,24576);
 
 	// Finish the render of the background
 	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_64x32);
@@ -284,7 +284,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 	GBA_FINISH_BG2(GBA_BG_FRONT | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_64x32);
 
 	// Finish the render of the background
-	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_64x32);
+	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_32x32);
 	
 	// Can't go beyond border!
 	ck_cam_minx = 16;
@@ -327,12 +327,12 @@ void LK_MP_UpdateCamera(){
 	}
 
 	if(globalCK_Y > (16<<3)+ck_cam_y){
-		ck_cam_y += 4;
+		ck_cam_y += 8;
 //		ck_mapneeds_updated = true;
 //		ck_mapdir |= 4;
 	}
 	if(globalCK_Y < (2<<3)+ck_cam_y){
-		ck_cam_y -= 4;
+		ck_cam_y -= 8;
 //		ck_mapneeds_updated = true;
 //		ck_mapdir |= 8;
 	}
@@ -393,10 +393,9 @@ void LK_MP_UpdateCamera(){
 
 	if(ck_last_cam_y != (ck_cam_y>>3)){
 		ck_last_cam_y = (ck_cam_y>>3);
-		//ck_mapneeds_updated = true;
+		ck_mapneeds_updated = true;
 	}
 };
-
 
 
 
@@ -416,20 +415,19 @@ void LK_MP_UpdateMap(){
 			tileoff += ck_level_size;
 			tile = (ck_levelbuff[tileoff]);
 			tile *= 3;
-			tile += 512;
-			infob = (*ck_tileinfo)[tile+1];
+			tile += 256;
+			infob = (*ck_tileinfo)[tile+2];
 			infoc = (*ck_tileinfo)[tile+2];
 		}else{
 			tile = (ck_levelbuff[tileoff]);
-			tile <<= 1;
 			infob = (*ck_tileinfo)[tile];
-			infoc = (*ck_tileinfo)[tile+1];
+			infoc = (*ck_tileinfo)[tile];
 		}
-		if(infoc && tv >= infoc){
+		if((infoc>>9) && tv >= (infoc>>9)){
 			if(vy<=ck_cam_y+24&&(i-(vy*ck_level_width))<=ck_cam_x+34)
 				ck_mapneeds_updated = true;
-			ck_levelbuff[tileoff] = ((infob)>>7)&0xFF;
-			ck_map_animations[(i<<1)+1] -= infoc;
+			ck_levelbuff[tileoff] = (infob)&0x1FF;
+			ck_map_animations[(i<<1)+1] -= (infoc>>9);
 		}
 		ck_map_animations[(i<<1)+1] += 0x0001;
 	}
@@ -442,7 +440,7 @@ void LK_MP_RenderMap(){
 	int lvlx = (ck_cam_x>>3);
 	int lvly = (ck_cam_y>>3);
 	int i = 0, e = 0, mvi = 0;
-	unsigned char * ftile = NULL;
+	uint16_t * ftile = NULL;
 	int leveloff = ck_level_width-32;
 
 	if(ck_mapneeds_updated){
@@ -457,13 +455,13 @@ void LK_MP_RenderMap(){
 		// Copy a region of the map to the screen memory
 		bgoffset = (lvly*ck_level_width)+lvlx;
 		mvi = (ck_mapbuffer<<5);
-		ftile = (unsigned char*)&ck_levelbuff + (bgoffset + ck_level_size);
+		ftile = ( uint16_t*)&ck_levelbuff + (bgoffset + ck_level_size);
 		for(i = 0; i < 22; ++i){
 			for(e = 0; e < 32; e++){
-				*(uint16_t*)(GBA_BG0_Map+mvi) = ck_levelbuff[bgoffset];
+				*(uint16_t*)(GBA_BG0_Map+mvi) = (uint16_t)ck_levelbuff[bgoffset];
 				*(uint16_t*)(GBA_BG1_Map+mvi) = *ftile;
 				*(uint16_t*)(GBA_BG2_Map+mvi) = 0;
-				if(((*ck_tileinfo)[512+((*ftile)*3)+1]&0x8000))
+				if(((*ck_tileinfo)[256+((*ftile)*3)+1]&0x8000))
 					*(uint16_t*)(GBA_BG2_Map+mvi) = *ftile;
 
 				++bgoffset;

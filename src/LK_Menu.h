@@ -25,6 +25,8 @@ typedef enum {
 	ck_CNShots,
 	ck_CNLives,
 	ck_CScorebox,
+	ck_CLinkSettings,
+	ck_CReconnect,
 }ck_MenuNames;
 
 typedef struct ck_Folder {

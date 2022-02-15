@@ -3,8 +3,8 @@
 #define __LK_MAP__
 
 
-#define MAX_LEVEL_WIDTH 72
-#define MAX_LEVEL_HEIGHT 72
+#define MAX_LEVEL_WIDTH 60
+#define MAX_LEVEL_HEIGHT 60
 #define MAX_LEVEL_ANIMATIONS 64
 
 // Max of 64 levels
@@ -14,7 +14,7 @@ extern uint16_t * ck_level_data;
 extern unsigned short ck_level_width;
 extern unsigned short ck_level_height;
 extern unsigned short ck_level_music;
-extern unsigned char ck_levelbuff[MAX_LEVEL_WIDTH*MAX_LEVEL_HEIGHT*2];
+extern uint16_t ck_levelbuff[MAX_LEVEL_WIDTH*MAX_LEVEL_HEIGHT*2];
 extern uint16_t ck_map_animations[MAX_LEVEL_ANIMATIONS*2];
 extern uint16_t **ck_tileinfo;
 extern int ck_level_size;
@@ -32,20 +32,21 @@ extern int ck_cam_scrolly;
     F.E.D.C  B.A.9.8  7.6.5.4  3.2.1.0
 
     0-6     Top Flag
-    7-D     Misc Flag
+    7-D     Bottom Flag
     E       Left Side Solid 
     F       Right Side Solid 
 
 
     Second byte:
-    0-6     Bottom Flag
+    0-6     Misc Flag
 
-    7-E     Animation to tile
+    7-E     Animation to tile (old - Do not use)
     F       Front
 
     Third byte:
 
-    0-F     Animation Time
+    0-8     Animation to tile ( Use )
+    9-F     Animation Time
     
 */
 

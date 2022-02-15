@@ -226,6 +226,15 @@ Address: 0x400001E -  Vertical scroll co-ordinate for BG3 (Write Only)
 // they are each 2K big 
 #define GBA_SCREEN_BLOCK(block) (GBA_VRAM + ((block) * 0x800))
 // Locations:
+// map0 - 0x06000000  : tiles1 - 0x06004000
+// map2 - 0x06001000  : tiles2 - 0x06008000
+// map4 - 0x06002000  : tiles3 - 0x0600C000
+// map6 - 0x06003000  : tiles3 - 0x0600C000
+// 
+// 
+// 
+// 
+// 
 // These overwrite sprite data!!
 // 0x06010000  -- block 20 (20<<8) 1400h
 // 0x06010800  -- block 21 (21<<8) 1500h
@@ -732,6 +741,7 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 
 #define GBA_COM_DISCONNECTED 0xFFFF
 #define GBA_COM_NODATA 0x00
+#define GBA_COM_NOGBAS 0x0002 // From No$GBA ???
 
 #define GBA_COM_8BIT 0x00
 #define GBA_COM_16BIT 0x1000
@@ -746,9 +756,11 @@ extern unsigned short GBA_SerialID;
 extern unsigned short GBA_SerialData[4];
 extern unsigned char GBA_SerialError;
 extern unsigned short GBA_SerialAvailable;
+extern int GBA_SerialWaitTime;
 
 void GBA_InitSerial(unsigned short baud);
 void GBA_FindGBAs();
+void GBA_RepairConnection();
 short GBA_WaitSerial(void);
 void GBA_UpdateSerial(void);
 void GBA_Serial_SendWord(unsigned short word); 

@@ -44,15 +44,15 @@ extern volatile uint16_t* GBA_BG_Palette;
 extern const unsigned char tilescreen_data[];
 extern const unsigned char timelabs_data[];
 
-#define CK_GBA_BLOCK0 0x00
-#define CK_GBA_BLOCK1 0x04
-#define CK_GBA_BLOCK2 0x08
+#define CK_GBA_BLOCK0 0x04
+#define CK_GBA_BLOCK1 0x08
+#define CK_GBA_BLOCK2 0x0C
 #define CK_GBA_BLOCK3 0x0C
 
-#define CK_GBA_MAP0 0x1000
-#define CK_GBA_MAP1 0x1200
-#define CK_GBA_MAP2 0x1400
-#define CK_GBA_MAP3 0x1600
+#define CK_GBA_MAP0 0x00
+#define CK_GBA_MAP1 0x200
+#define CK_GBA_MAP2 0x400
+#define CK_GBA_MAP3 0x600
 
 
 void LK_CA_SetupGraphics();

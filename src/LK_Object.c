@@ -40,11 +40,11 @@ void LK_PhysCollideObj(ck_object *obj,ck_object *obj_hit){
 						if(ck_localGameState.ck_health[obj_hit->var4]<0){
 							ck_localGameState.ck_lives[obj->var4] += 1; // Add a kill
 						}
-						obj->var1 = 0x20;
-						obj->accel_x = 0;
-						obj->accel_y = 0;
 						ck_localGameState.update_scorebox = true;
 					}
+					obj_hit->var1 = 0x10;
+					obj->accel_x = 0;
+					obj->accel_y = 0;					
 				}
 			}
 		}
@@ -53,17 +53,19 @@ void LK_PhysCollideObj(ck_object *obj,ck_object *obj_hit){
 	if(obj->type==ck_objBomb && obj_hit->type==ck_objPlayer){
 		if(ck_localGameState.ck_health[obj_hit->var4]>0){
 			if(obj->var4 != obj_hit->var4){
-				if(obj_hit->var1==0 && obj->state == ck_objKill){
-					// Hurt the player
-					ck_localGameState.ck_health[obj_hit->var4] -= 50;
-					if(ck_localGameState.ck_health[obj_hit->var4]<0){
-						ck_localGameState.ck_lives[obj->var4] += 1; // Add a kill
+				if(obj->state == ck_objKill){
+					if(obj_hit->var1==0){
+						// Hurt the player
+						ck_localGameState.ck_health[obj_hit->var4] -= 50;
+						if(ck_localGameState.ck_health[obj_hit->var4]<0){
+							ck_localGameState.ck_lives[obj->var4] += 1; // Add a kill
+						}
+						obj_hit->var1  = 0x10; // Make the player flash
+						ck_localGameState.update_scorebox = true;
 					}
-					obj_hit->var1  = 0x20; // Make the player flash
 					obj->var2 = 2;
 					obj->accel_x = 0;
 					obj->accel_y = 0;
-					ck_localGameState.update_scorebox = true;
 					obj->state = ck_objIdle; // It's not a deadly thihng anymore
 					obj->ck_frame = &ck_BombRemove;
 				}else{
@@ -97,7 +99,7 @@ void LK_MapCollideObj(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with sloped top
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -116,7 +118,7 @@ void LK_MapCollideObj(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with solid top
 				if(tileTI==0x01){
@@ -145,7 +147,7 @@ void LK_MapCollideObj(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with sloped bottom
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -164,7 +166,7 @@ void LK_MapCollideObj(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with solid bottom
 				if(tileTI==0x01){
@@ -191,7 +193,7 @@ void LK_MapCollideObj(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with right wall
 				if(tileTI&0x8000){
@@ -216,7 +218,7 @@ void LK_MapCollideObj(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with left wall
 				if(tileTI&0x4000){
@@ -302,7 +304,7 @@ void LK_MapCollideBomb(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with sloped top
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -322,7 +324,7 @@ void LK_MapCollideBomb(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with solid top
 				if(tileTI==0x01){
@@ -352,7 +354,7 @@ void LK_MapCollideBomb(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with sloped bottom
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -372,7 +374,7 @@ void LK_MapCollideBomb(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with solid bottom
 				if(tileTI==0x01){
@@ -399,7 +401,7 @@ void LK_MapCollideBomb(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with right wall
 				if(tileTI&0x8000){
@@ -424,7 +426,7 @@ void LK_MapCollideBomb(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with left wall
 				if(tileTI&0x4000){
@@ -601,7 +603,7 @@ void LK_MapCollideShot(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with sloped top
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -621,7 +623,7 @@ void LK_MapCollideShot(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with solid top
 				if(tileTI==0x01){
@@ -651,7 +653,7 @@ void LK_MapCollideShot(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with sloped bottom
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -671,7 +673,7 @@ void LK_MapCollideShot(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with solid bottom
 				if(tileTI==0x01){
@@ -699,7 +701,7 @@ void LK_MapCollideShot(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with right wall
 				if(tileTI&0x8000){
@@ -725,7 +727,7 @@ void LK_MapCollideShot(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with left wall
 				if(tileTI&0x4000){
@@ -1330,14 +1332,14 @@ void LK_MapCollideKeen(ck_object *obj){
 		if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 			uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-			tileTI = (((*ck_tileinfo)[512+(tile*3)])>>7)&0x7F;
+			tileTI = (((*ck_tileinfo)[256+(tile*3)])>>7)&0x7F;
 
 			// Interact with pole
 			if(tileTI==0x01){
 				TIclipY += 2;
 				
 				tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-				tileTI = (((*ck_tileinfo)[512+(tile*3)]))&0x7F;
+				tileTI = (((*ck_tileinfo)[256+(tile*3)]))&0x7F;
 				
 				if(tileTI==0x01){
 					short oldVY = obj->accel_y;
@@ -1388,8 +1390,8 @@ void LK_MapCollideKeen(ck_object *obj){
 				TIclipY -= 1;
 				tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (((*ck_tileinfo)[512+(tile*3)])>>7)&0x7F;
-				TIclipY2 = (((*ck_tileinfo)[512+(tile*3)+1]))&0x7F;
+				tileTI = (((*ck_tileinfo)[256+(tile*3)])>>7)&0x7F;
+				TIclipY2 = (((*ck_tileinfo)[256+(tile*3)+1]))&0x7F;
 				// Stop keen from going off of pole
 				if(obj->dir_y == CK_Dir_Up){
 					if(tileTI!=0x01||TIclipY2==0x01){
@@ -1423,7 +1425,7 @@ void LK_MapCollideKeen(ck_object *obj){
 		if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 			uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-			tileTI = (((*ck_tileinfo)[512+(tile*3)])>>7)&0x7F;
+			tileTI = (((*ck_tileinfo)[256+(tile*3)])>>7)&0x7F;
 			tileTI2 = LK_MP_GetTile(TIclipX,TIclipY,2);
 
 			// Interact with deadly
@@ -1468,7 +1470,7 @@ void LK_MapCollideKeen(ck_object *obj){
 						LK_SD_PlaySound(CK_SND_CLICK);
 						
 						int bridge_end = 0;
-						uint16_t tileTI3 = (((*ck_tileinfo)[512+(tile*3)+1])>>7)&0xFF;
+						uint16_t tileTI3 = (((*ck_tileinfo)[256+(tile*3)+1])>>7)&0xFF;
 
 						LK_MP_SetTile(TIclipX,TIclipY,tileTI3,1);
 						if(tileTI2&0x8000){
@@ -1544,7 +1546,7 @@ void LK_MapCollideKeen(ck_object *obj){
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
 				
 				// Clip with sloped top
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -1569,13 +1571,13 @@ void LK_MapCollideKeen(ck_object *obj){
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)]&0x7F;
-				tileTI2 = ((*ck_tileinfo)[512+(tile*3)+1]>>7)&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)]&0x7F;
+				tileTI2 = ((*ck_tileinfo)[256+(tile*3)+1]>>7)&0x7F;
 				
 				// Clip with solid top
 				if(tileTI==0x01){
 					if(obj->state == ck_objStanding&&obj->dir_y == CK_Dir_Down && on_slope==false){
-						tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+						tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 						
 						// If bottom info is fall thru,
 						if(tileTI==0x00){
@@ -1622,7 +1624,7 @@ skipYCheck:
 			if(TIclipX>=0 && TIclipY2>=0 && TIclipX < ck_level_width && TIclipY2 < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY2*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with sloped bottom
 				if(tileTI>=0x02&&tileTI<=0x07){
@@ -1643,7 +1645,7 @@ skipYCheck:
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)+1]&0x7F;
+				tileTI = (*ck_tileinfo)[256+(tile*3)+1]&0x7F;
 				
 				// Clip with solid bottom
 				if(tileTI==0x01){
@@ -1673,7 +1675,7 @@ skipYCheck:
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with right wall
 				if(tileTI&0x8000){
@@ -1686,7 +1688,7 @@ skipYCheck:
 					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground&&obj->can_grab==1){
 						TIclipY -= 1;
 						tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-						tileTI = (*ck_tileinfo)[512+(tile*3)];
+						tileTI = (*ck_tileinfo)[256+(tile*3)];
 						
 						// If tile above is not solid
 						if(!((tileTI&0x8000) || ((tileTI&0x7F)==1))){
@@ -1694,7 +1696,7 @@ skipYCheck:
 
 							TIclipX -= 1;
 							tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-							tileTI = (*ck_tileinfo)[512+(tile*3)];
+							tileTI = (*ck_tileinfo)[256+(tile*3)];
 							TIclipX += 1;
 							// If tile to the left is not solid
 							if(!(tileTI&0x8000) ){
@@ -1726,7 +1728,7 @@ skipYCheck:
 			if(TIclipX>=0 && TIclipY>=0 && TIclipX < ck_level_width && TIclipY < ck_level_height){
 				uint16_t tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
 
-				tileTI = (*ck_tileinfo)[512+(tile*3)];
+				tileTI = (*ck_tileinfo)[256+(tile*3)];
 				
 				// Clip with left wall
 				if(tileTI&0x4000){
@@ -1739,7 +1741,7 @@ skipYCheck:
 					if(!ck_localGameState.is_pogoing[obj->var4] && obj->accel_y > 0 && !was_on_ground&&obj->can_grab==1){
 						TIclipY -= 1;
 						tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-						tileTI = (*ck_tileinfo)[512+(tile*3)];
+						tileTI = (*ck_tileinfo)[256+(tile*3)];
 						
 						// If tile above is not solid
 						if(!((tileTI&0x4000) || ((tileTI&0x7F)==1) )){
@@ -1747,7 +1749,7 @@ skipYCheck:
 
 							TIclipX += 1;
 							tile = (ck_levelbuff[(TIclipY*ck_level_width)+TIclipX + ck_level_size]);
-							tileTI = (*ck_tileinfo)[512+(tile*3)];
+							tileTI = (*ck_tileinfo)[256+(tile*3)];
 							TIclipX -= 1;
 							// If tile to the right is not solid
 							if(!(tileTI&0x4000) ){
@@ -1957,11 +1959,18 @@ void LK_LogicKeen(ck_object *obj){
 				ck_localGameState.update_scorebox = true;
 				obj->frozen = false;
 				obj->frozen2 = false;
+				obj->can_move = true;
 				obj->trying_to_move = 0;
 				obj->interacting = 0;
 				obj->animation_tick = 0;
 				obj->ck_frame = &ck_KeenStand;
 				obj->state = ck_objStanding;
+				ck_localGameState.is_pogoing[obj->var4] = false;
+				ck_localGameState.on_ground[obj->var4] = false;
+				ck_localGameState.has_shot[obj->var4] = false;
+				ck_localGameState.has_thrown[obj->var4] = false; 
+				ck_localGameState.thrown_bomb[obj->var4] = false;
+	
 				obj->dir_y = CK_Dir_None;
 				obj->dir_x = CK_Dir_Right;
 
@@ -1971,6 +1980,9 @@ void LK_LogicKeen(ck_object *obj){
 				
 				obj->pos_x = obj->spawn_x;
 				obj->pos_y = obj->spawn_y;
+				
+				obj->accel_x = 0;
+				obj->accel_y = 0;
 				
 				if(GBA_SerialID == obj->var4){
 					ck_cam_x = obj->spawn_x - (GBA_SCREEN_WIDTH>>1);

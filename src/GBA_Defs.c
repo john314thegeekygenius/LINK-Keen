@@ -150,6 +150,7 @@ unsigned short GBA_BaudRate = 0;
 unsigned char GBA_SerialError = 0;
 unsigned short GBA_TimeOutTick = 0;
 unsigned short GBA_SerialAvailable = 0;
+int GBA_SerialWaitTime = 40;
 
 void GBA_InitSerial(unsigned short baud){
 	// Set this to 0 (Enable serial communication)
@@ -160,13 +161,15 @@ void GBA_InitSerial(unsigned short baud){
 	GBA_BaudRate = baud;
 	
 	GBA_SerialAvailable = 1;
+	
+	GBA_SerialWaitTime = 40; // 40 is the minimum?
 
 	GBA_FindGBAs();
 };
 
 
 void GBA_FindGBAs(){
-	int i;
+	int i,c;
 
 	// Clear some variables
 	GBA_SerialID = 0;
@@ -212,20 +215,83 @@ void GBA_FindGBAs(){
 		GBA_GameBoysConnected[0] = 1;
 
 		// Send data
-		GBA_Serial_SendWord(0x1234);
+		for(c = 0 ; c < 10; c++){
+			GBA_Serial_SendWord(0x1234);
+			
+			GBA_UpdateSerial();
 
-		GBA_UpdateSerial();
-
-		// Find out who's online
-		GBA_NGameBoysConnected = 0;
-		for(i = 0; i < 4; i++){
-			if(GBA_SerialData[i]==0x1234){
-				GBA_GameBoysConnected[i] = 1;
-				GBA_NGameBoysConnected += 1;
+			// Find out who's online
+			GBA_NGameBoysConnected = 0;
+			for(i = 0; i < 4; i++){
+				if(GBA_SerialData[i]==0x1234){
+					if(GBA_GameBoysConnected[i]==0){
+						GBA_GameBoysConnected[i] = 1;
+					}
+					GBA_NGameBoysConnected += 1;
+				}else{
+					if(GBA_GameBoysConnected[i]){
+						// Uhh!
+					}
+				}
 			}
+			if(GBA_NGameBoysConnected>1)
+				break;
 		}
 		GBA_SerialAvailable = 1;
 	}
+
+};
+
+void GBA_RepairConnection(){
+	int i,c;
+
+	// Clear some variables
+	GBA_SerialID = 0;
+	GBA_SerialError = 0;
+
+	GBA_GameBoysConnected[0] = 
+	GBA_GameBoysConnected[1] = 
+	GBA_GameBoysConnected[2] = 
+	GBA_GameBoysConnected[3] = 0;		
+
+	// Put init packet head into register
+	GBA_Serial_SendWord(0x1234);
+
+	// Wait for transfer to end
+	if(GBA_WaitSerial()){
+
+		// Get GBA ID
+		GBA_SerialID = (*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ID)>>4;
+
+		// Master Gamboy is always connected
+		GBA_GameBoysConnected[0] = 1;
+
+		// Send data
+		for(c = 0 ; c < 10; c++){
+			GBA_Serial_SendWord(0x1234);
+			
+			GBA_UpdateSerial();
+
+			// Find out who's online
+			GBA_NGameBoysConnected = 0;
+			for(i = 0; i < 4; i++){
+				if(GBA_SerialData[i]==0x1234){
+					if(GBA_GameBoysConnected[i]==0){
+						GBA_GameBoysConnected[i] = 1;
+					}
+					GBA_NGameBoysConnected += 1;
+				}else{
+					if(GBA_GameBoysConnected[i]){
+						// Uhh!
+					}
+				}
+			}
+			if(GBA_NGameBoysConnected>1)
+				break;
+		}
+		GBA_SerialAvailable = 1;
+	}
+
 
 };
 
@@ -243,12 +309,12 @@ short GBA_WaitSerial(void){
 		if(GBA_TimeOutTick > (GBA_SERIAL_TIMEOUT<<1)){
 			GBA_TimeOutTick = 0;
 			GBA_SerialError = GBA_TIMEOUT_ERROR;
-			return 0;
+			return GBA_TIMEOUT_ERROR;
 		}
 
 		if(*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ERROR){
 			GBA_SerialError = GBA_LINK_ERROR;
-			return 0;
+			return GBA_LINK_ERROR;
 		}
 	};
 	return 1;
@@ -278,7 +344,7 @@ void GBA_Serial_SendWord(unsigned short word){
 			GBA_Synced = 1;
 			GBA_Delay(GBA_S_MAX_WAIT); // Wait for a bit
 		}*/
-		GBA_Delay(10); // Wait for a bit
+		GBA_Delay(GBA_SerialWaitTime); // Wait for a bit
 		*(volatile uint16_t*)GBA_REG_SCCNT_L |= GBA_COM_BUSY; // Send start signal	
 	}
 	

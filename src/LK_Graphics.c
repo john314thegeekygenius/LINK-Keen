@@ -15,6 +15,8 @@
 #include "CK_Data/spot_sheet.h"
 #include "CK_Data/barker_sheet.h"
 #include "CK_Data/blaster_sheet.h"
+#include "CK_Data/cosmo_sheet.h"
+#include "CK_Data/jake_sheet.h"
 
 
 // Intro screens
@@ -54,17 +56,17 @@ const uint16_t cki_itemsSheet   = 0;//(16*48*2)-(16*32);
 const uint16_t cki_nextLineOff = 0x20;
 
 
-volatile uint16_t* GBA_BG0_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(0);
-volatile uint16_t* GBA_BG0_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(16);
+volatile uint16_t* GBA_BG0_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(1);
+volatile uint16_t* GBA_BG0_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(0);
 
-volatile uint16_t* GBA_BG1_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(1);
-volatile uint16_t* GBA_BG1_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(18);
+volatile uint16_t* GBA_BG1_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(2);
+volatile uint16_t* GBA_BG1_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(2);
 
-volatile uint16_t* GBA_BG2_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(2);
-volatile uint16_t* GBA_BG2_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(20);
+volatile uint16_t* GBA_BG2_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(3);
+volatile uint16_t* GBA_BG2_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(4);
 
 volatile uint16_t* GBA_BG3_Tiles = (volatile uint16_t*)GBA_CHAR_BLOCK(3);
-volatile uint16_t* GBA_BG3_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(22);
+volatile uint16_t* GBA_BG3_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(6);
 
 volatile uint16_t* GBA_BG_Palette = (uint16_t*)GBA_PAL_BG_START;
 
@@ -203,9 +205,14 @@ void LK_CA_HackPlayerSprite(int sprId1, int sprId2, int sprId3, int sheetId,int 
 		data = (uint16_t*)&barker_sheet_data;
 		break;
 		case 5:
+		data = (uint16_t*)&jake_sheet_data;
+		break;
+		case 6:
+		data = (uint16_t*)&cosmo_sheet_data;
+		break;
+		case 7:
 		data = (uint16_t*)&blaster_sheet_data;
 		break;
-		
 		default:
 		data = (uint16_t*)&keen_sheet_data;
 		break;

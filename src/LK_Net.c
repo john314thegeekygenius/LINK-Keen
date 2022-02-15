@@ -28,6 +28,7 @@ boolean LK_NT_InitMatch(){
 	int GB_Connected = 0;
 	int connectedPlayers[4];
 	boolean redrawme = true;
+	boolean canbreak = false;
 
 	for(i = 0; i < 4; i++){
 		connectedPlayers[i] = 0;
@@ -177,8 +178,8 @@ boolean LK_NT_InitMatch(){
 	for(i=0;i<4;i++)
 		connectedPlayers[i] = 0;
 	
-	while(1){
-		boolean canbreak = false;
+	canbreak = false;
+	while(canbreak==false){
 		// Send data
 		GBA_Serial_SendWord(CK_DATA_PACKET | 
 			(ck_localGameState.player_pics[GBA_SerialID]&0xF) | 
@@ -206,8 +207,71 @@ boolean LK_NT_InitMatch(){
 		for(i=0;i<ck_localGameState.num_players;i++)
 			if(connectedPlayers[i] == 0)
 				canbreak = false;
-		if(canbreak)
-			return false;
+	}
+	canbreak = false;
+	while(canbreak==false){
+		// Send data
+		GBA_Serial_SendWord(CK_DATA2_PACKET | 
+			((ck_localGameState.start_shots/5)&0x3F) | 
+			(((ck_localGameState.start_health/5)&0x3F)<<6)
+			);
+//			((ck_localGameState.start_bombs&0xF)<<4) |
+
+		// Collect information
+		GBA_UpdateSerial();
+
+		for(i=0;i<ck_localGameState.num_players;i++){
+			if((GBA_SerialData[i]&0xF000) == CK_DATA2_PACKET){
+				connectedPlayers[i] = 1;
+				if(i==0){
+					ck_localGameState.start_shots = (GBA_SerialData[i]&0x3F)*5;
+					ck_localGameState.start_health = ((GBA_SerialData[i]>>6)&0x3F)*5;
+				}
+			}else if(GBA_SerialData[i] == CK_HANDSHAKE_PACKET){
+				// That GBA is lagging behind
+			}else{
+				int d = GBA_SerialData[i];
+				LK_US_ThrowError("Bad Packet");
+				LK_US_ThrowError(LK_US_Htoa16(d));
+				return true;
+			}
+		}
+		canbreak = true;
+		for(i=0;i<ck_localGameState.num_players;i++)
+			if(connectedPlayers[i] == 0)
+				canbreak = false;
+	}
+	canbreak = false;
+	while(canbreak==false){
+		// Send data
+		GBA_Serial_SendWord(CK_DATA_PACKET | 
+			((ck_localGameState.start_bombs&0xF)) |
+			((ck_localGameState.end_kills&0x7F)<<4)			
+			);
+
+		// Collect information
+		GBA_UpdateSerial();
+
+		for(i=0;i<ck_localGameState.num_players;i++){
+			if((GBA_SerialData[i]&0xF000) == CK_DATA_PACKET){
+				connectedPlayers[i] = 1;
+				if(i==0){
+					ck_localGameState.start_bombs = GBA_SerialData[i]&0xF;
+					ck_localGameState.end_kills = (GBA_SerialData[i]>>4)&0x7F;
+				}
+			}else if(GBA_SerialData[i] == CK_HANDSHAKE_PACKET){
+				// That GBA is lagging behind
+			}else{
+				int d = GBA_SerialData[i];
+				LK_US_ThrowError("Bad Packet");
+				LK_US_ThrowError(LK_US_Htoa16(d));
+				return true;
+			}
+		}
+		canbreak = true;
+		for(i=0;i<ck_localGameState.num_players;i++)
+			if(connectedPlayers[i] == 0)
+				canbreak = false;
 	}
 	return false;
 };

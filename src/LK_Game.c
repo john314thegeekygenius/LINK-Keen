@@ -151,6 +151,11 @@ void LK_EndMatch(){
 			GBA_UpdateSerial();
 	}
 	while(((~GBA_BUTTONS)&GBA_BUTTON_A));
+	
+	if(ck_localGameState.multiplayerGame){
+		// Copy some settings back over
+		ck_localGameState.player_pics[0] = ck_localGameState.player_pics[GBA_SerialID];
+	}
 	LK_US_ResetROM();
 
 };
@@ -161,15 +166,16 @@ void LK_IntroDemo(){
 	int i,e,f, timeout;
 
 	volatile uint16_t* GBA_BG_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(20);
+	volatile uint16_t* GBA_BG_Tiles   = (volatile uint16_t*)GBA_CHAR_BLOCK(0);
 
 	// Set custom tiles (675 tiles)
 	// 168 tiles per mapset
 
 	// Copy the tileset into the block
-	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)timelabs_data,(43200));
+	GBA_DMA_Copy16((uint16_t*)GBA_BG_Tiles,(uint16_t*)timelabs_data,(43200));
 
 	// Finish the render of the background
-	GBA_FINISH_BG0(GBA_BG_TOP | CK_GBA_BLOCK0 | 0x1400 | GBA_BG_SIZE_32x32);
+	GBA_FINISH_BG0(GBA_BG_TOP | 0x00 | 0x1400 | GBA_BG_SIZE_32x32);
 
 	// Render the screen
 	e = 0;
@@ -201,7 +207,7 @@ void LK_IntroDemo(){
 
 done1:
 	// Copy the title screen picture
-	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)tilescreen_data,(43200));
+	GBA_DMA_Copy16((uint16_t*)GBA_BG_Tiles,(uint16_t*)tilescreen_data,(43200));
 
 	// Render the screen (cause it got reset???)
 	e = 0;
@@ -217,6 +223,9 @@ done1:
 	
 	while(!((~GBA_BUTTONS)&GBA_BUTTON_A));
 	while(((~GBA_BUTTONS)&GBA_BUTTON_A));
+	
+	// Clear all the tiles to blank
+	GBA_DMA_MemSet32((uint32_t*)GBA_VRAM,0,128*128);
 
 };
 
@@ -227,11 +236,11 @@ void LK_ResetGameState(){
 	ck_localGameState.game_over = 0;
 
 	for(i = 0; i < 4; i++){
-		ck_localGameState.ck_shots[i] = 0;
+		ck_localGameState.ck_shots[i] = ck_localGameState.start_shots;
 		ck_localGameState.ck_lives[i] = 0;
-		ck_localGameState.ck_bombs[i] = 0;
+		ck_localGameState.ck_bombs[i] = ck_localGameState.start_bombs;
 		ck_localGameState.ck_score[i] = 0;
-		ck_localGameState.ck_health[i] = 0;
+		ck_localGameState.ck_health[i] = ck_localGameState.start_health;
 
 		ck_localGameState.is_pogoing[i] = false;
 		ck_localGameState.on_ground[i] = false;
@@ -286,7 +295,6 @@ void LK_Init(void){
 	LK_US_ResetTiles();
 	LK_CA_CopySpriteSheet();
 	
-	
 	ck_localGameState.num_players = GBA_NGameBoysConnected;
 };
 
@@ -303,6 +311,10 @@ void LK_InitGame(boolean singleplayer){
 			LK_US_ResetROM();
 			return;
 		}
+	}else{
+		// Reset some things
+		for(i = 0; i < 4; i++)
+			ck_localGameState.player_ips[i] = 0;
 	}
 
 	// Reset some things and load the data
@@ -432,18 +444,18 @@ void LK_DoGameLoop(void){
 		}else{
 			ck_localGameState.multiplayerAvailable = false;
 		}
-		
+		/*
 		if(ck_localGameState.multiplayerGame){
 			if(VSyncCount++ >= LK_VRBs*0x40){
 				updateGame = 1;
 				VSyncCount = 0;
 			}
-		}else{
-			if(GBA_VSyncCounter >= nextVSync){
-				updateGame = 1;
-				nextVSync += LK_VRBs;
-			}
+		}else{*/
+		if(GBA_VSyncCounter >= nextVSync){
+			updateGame = 1;
+			nextVSync += LK_VRBs;
 		}
+		//}
 		if(updateGame){
 			updateGame = 0;
 			if(ck_localGameState.in_game){
@@ -454,9 +466,10 @@ void LK_DoGameLoop(void){
 				LK_US_DrawControlPannel();
 			}
 		}
-		if(!ck_localGameState.multiplayerGame){
+//		if(!ck_localGameState.multiplayerGame){
 			GBA_WAIT_VBLANK
-		}
+//		}
+
 		if(GBA_SerialError){
 			int d = GBA_SerialError;
 			// Uh oh!
