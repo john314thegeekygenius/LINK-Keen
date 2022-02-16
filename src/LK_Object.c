@@ -1938,6 +1938,7 @@ void LK_MurderKeen(ck_object *obj){
 
 
 void LK_LogicKeen(ck_object *obj){
+	
 	if(obj->can_grab == 2){
 		obj->can_grab = 0;
 	}else{
@@ -2533,6 +2534,7 @@ void LK_LogicKeen(ck_object *obj){
 		if(ck_localGameState.has_shot[obj->var4] == false){
 			int hasShot = 0;
 			ck_localGameState.has_shot[obj->var4] = true;
+			ck_localGameState.is_pogoing[obj->var4] = false;
 
 			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
 

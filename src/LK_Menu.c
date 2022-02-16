@@ -120,6 +120,10 @@ uint16_t chr2gliph(char c){
 	if(c == '.'){
 		return 104;
 	}
+	if(c == '\1') return 87;
+	if(c == '\2') return 88;
+	if(c == '\3') return 103;
+	if(c == '\4') return 102;
 	return 0;
 };
 
@@ -219,6 +223,21 @@ void LK_US_PrintXY(char *str){
 	US_TextX += US_TextY;
 	// Write the text to the screen
 	while(*str){
+		GBA_BG1_Map[US_TextX] = chr2gliph(*str);
+		++str;
+		++US_TextX;
+	}
+};
+
+
+void LK_US_PrintXYMenu(char *str){
+	if(str==NULL) return;
+	// Shift the y position
+	US_TextY <<= 5;
+	US_TextX += US_TextY;
+	// Write the text to the screen
+	while(*str){
+		GBA_BG0_Map[US_TextX] = 0x87;
 		GBA_BG1_Map[US_TextX] = chr2gliph(*str);
 		++str;
 		++US_TextX;
@@ -534,6 +553,10 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			ck_localGameState.num_players = ck_selectorX;
+
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change value");
+
 		break;
 		case ck_CNBombs:
 			// Draw some UI
@@ -559,6 +582,8 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			ck_localGameState.start_bombs = ck_selectorX;
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change value");
 		break;
 		case ck_CNShots:
 			// Draw some UI
@@ -584,6 +609,8 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			ck_localGameState.start_shots = ck_selectorX;
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change value");
 		break;
 		case ck_CNLives:
 			// Draw some UI
@@ -672,6 +699,8 @@ void LK_US_DrawControlPannel(){
 				}
 				ck_localGameState.end_kills = ck_selectorX;
 			}
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change value");
 		break;
 		case ck_CCharacter:
 			ck_selectorX = ck_localGameState.player_pics[0];
@@ -706,6 +735,8 @@ void LK_US_DrawControlPannel(){
 				ck_lastInput = 0;
 			}
 			ck_localGameState.player_pics[0] = ck_selectorX;
+			US_TextX = 1; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change character");
 
 		break;
 		case ck_CMap:
@@ -745,6 +776,8 @@ void LK_US_DrawControlPannel(){
 				LK_US_PrintXY(map_data[2]);
 			}
 			ck_localGameState.level_id = ck_mapSelected;
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change value");
 
 		break;
 
@@ -771,6 +804,8 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			GBA_SerialWaitTime = ck_selectorX;
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change value");
 
 		break;
 		case ck_CReconnect:
@@ -812,7 +847,7 @@ void LK_US_DrawControlPannel(){
 
 		case ck_CMusic:
 
-			if(ck_lastInput & GBA_BUTTON_A){
+			if((ck_lastInput & GBA_BUTTON_A) || (ck_lastInput & GBA_BUTTON_LEFT) || (ck_lastInput & GBA_BUTTON_RIGHT)){
 				ck_localGameState.music_enabled = !ck_localGameState.music_enabled;
 				ck_ControlPannelDrawn = false;
 				// Clear the flag
@@ -825,10 +860,12 @@ void LK_US_DrawControlPannel(){
 			}else{
 				LK_US_PrintXY("Music Disabled");
 			}
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 or A to toggle");
 		break;
 		case ck_CSound:
 
-			if(ck_lastInput & GBA_BUTTON_A){
+			if((ck_lastInput & GBA_BUTTON_A) || (ck_lastInput & GBA_BUTTON_LEFT) || (ck_lastInput & GBA_BUTTON_RIGHT)){
 				ck_localGameState.sound_enabled = !ck_localGameState.sound_enabled;
 				ck_ControlPannelDrawn = false;
 				// Clear the flag
@@ -844,6 +881,8 @@ void LK_US_DrawControlPannel(){
 
 				LK_US_PrintXY("Sound Disabled");
 			}
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 or A to toggle");
 		break;
 		case ck_CScorebox:
 
@@ -873,12 +912,12 @@ void LK_US_DrawControlPannel(){
 			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
 			LK_US_PrintGlyph(ck_selectorGlyph);
 
-			if(ck_lastInput & GBA_BUTTON_UP){
+			if((ck_lastInput & GBA_BUTTON_UP) ){
 				ck_selectorY  -= 1;
 				// Clear the flag
 				ck_lastInput = 0;
 			}
-			if(ck_lastInput & GBA_BUTTON_DOWN){
+			if((ck_lastInput & GBA_BUTTON_DOWN)){
 				ck_selectorY  += 1;
 				// Clear the flag
 				ck_lastInput = 0;
@@ -901,14 +940,14 @@ void LK_US_DrawControlPannel(){
 
 			if(ck_selectorY == 0){
 				ck_selectorX = ck_localGameState.ck_status_type;
-				if(ck_lastInput & GBA_BUTTON_LEFT){
+				if((ck_lastInput & GBA_BUTTON_LEFT)){
 					ck_selectorX  -= 1;
 					if(ck_selectorX<0) ck_selectorX = 0;
 					// Clear the flag
 					ck_lastInput = 0;
 					ck_ControlPannelDrawn = false;
 				}
-				if(ck_lastInput & GBA_BUTTON_RIGHT){
+				if((ck_lastInput & GBA_BUTTON_RIGHT)){
 					ck_selectorX  += 1;
 					if(ck_selectorX>2) ck_selectorX = 2;
 					// Clear the flag
@@ -918,14 +957,14 @@ void LK_US_DrawControlPannel(){
 				ck_localGameState.ck_status_type = ck_selectorX;
 			}else{
 				ck_selectorX = ck_localGameState.ck_status_loc;
-				if(ck_lastInput & GBA_BUTTON_LEFT){
+				if((ck_lastInput & GBA_BUTTON_LEFT) ){
 					ck_selectorX  -= 1;
 					if(ck_selectorX<0) ck_selectorX = 0;
 					// Clear the flag
 					ck_lastInput = 0;
 					ck_ControlPannelDrawn = false;
 				}
-				if(ck_lastInput & GBA_BUTTON_RIGHT){
+				if((ck_lastInput & GBA_BUTTON_RIGHT) ){
 					ck_selectorX  += 1;
 					if(ck_selectorX>1) ck_selectorX = 1;
 					// Clear the flag
@@ -934,6 +973,8 @@ void LK_US_DrawControlPannel(){
 				}
 				ck_localGameState.ck_status_loc = ck_selectorX;
 			}
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change option");
 		break;
 		case ck_CControls:
 			if(ck_lastInput & GBA_BUTTON_UP){
@@ -967,16 +1008,16 @@ void LK_US_DrawControlPannel(){
 			}
 			if(ck_lastInput & GBA_BUTTON_RIGHT){
 				if(ck_selectorY==0)
-					if(ck_localGameState.jump_set<7)
+					if(ck_localGameState.jump_set<3) // 7
 						ck_localGameState.jump_set += 1;
 				if(ck_selectorY==1)
-					if(ck_localGameState.pogo_set<7)
+					if(ck_localGameState.pogo_set<3) // 7
 						ck_localGameState.pogo_set += 1;
 				if(ck_selectorY==2)
-					if(ck_localGameState.shoot_set<7)
+					if(ck_localGameState.shoot_set<3) // 7
 						ck_localGameState.shoot_set += 1;
 				if(ck_selectorY==3)
-					if(ck_localGameState.throw_set<7)
+					if(ck_localGameState.throw_set<3) // 7
 						ck_localGameState.throw_set += 1;
 				// Clear the flag
 				ck_lastInput = 0;
@@ -1057,6 +1098,9 @@ void LK_US_DrawControlPannel(){
 			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
 			LK_US_PrintGlyph(ck_selectorGlyph+1);
 
+			US_TextX = 3; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \1 \3 to change control");
+
 		break;
 
 		default:
@@ -1109,6 +1153,9 @@ void LK_US_DrawControlPannel(){
 			// Draw the selector
 			US_TextX = 7; US_TextY = 7+ck_selectorY;
 			LK_US_PrintGlyph(ck_selectorGlyph+1);
+
+			US_TextX = 4; US_TextY = 18;
+			LK_US_PrintXYMenu("Use \2 \4 to select menu");
 		break;
 	}
 };
