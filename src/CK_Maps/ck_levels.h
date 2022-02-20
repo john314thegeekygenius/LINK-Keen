@@ -1,7 +1,13 @@
 
 
 #include "ck5_tileset0_info.h"
+#ifdef LK_MULTIBOOT_ROM
+#include "ck5_tileset04b.h"
+#include "ck5_tileset14b.h"
+#else
 #include "ck5_tileset0.h"
+#include "ck5_tileset1.h"
+#endif
 #include "ck_map0.h"
 #include "ck_map1.h"
 #include "ck_map2.h"
