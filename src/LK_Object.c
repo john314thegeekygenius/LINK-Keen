@@ -536,11 +536,17 @@ void LK_SpawnBomb(int x,int y, int dir_x, int dir_y, ck_object * keenobj){
 	obj->clip_rects.clipW = 12;
 	obj->clip_rects.clipH = 12;
 
+#ifdef LK_MULTIBOOT_ROM
 	if(obj->spr_id1==128)
-		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
 	else
-		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
-
+		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
+#else
+	if(obj->spr_id1==128)
+		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+#endif
 	GBA_SET_FLIPH(obj->spr_id1,0)
 	GBA_SET_FLIPV(obj->spr_id1,0)
 
@@ -849,11 +855,17 @@ void LK_SpawnShot(int x,int y, int dir_x, int dir_y, int obj_id){
 	obj->clip_rects.clipW = 12;
 	obj->clip_rects.clipH = 12;
 
+#ifdef LK_MULTIBOOT_ROM
 	if(obj->spr_id1==128)
-		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
 	else
-		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
-
+		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
+#else
+	if(obj->spr_id1==128)
+		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+#endif
 	obj->animation_tick = 0;
 	obj->ck_frame = &ck_ShotAnimation;
 	obj->ck_render = &LK_DrawShot;
@@ -1846,9 +1858,27 @@ void LK_DrawKeen(ck_object *obj){
 
 	// Hack:
 	// Change only one keen sprite to save space
+#ifdef LK_MULTIBOOT_ROM
+	GBA_SET_SPRITE_TILES(obj->spr_id1, (cki_playerGraphicsStart+(obj->var4<<1))*32); 
+	GBA_SET_SPRITE_TILES(obj->spr_id2, 2+((cki_playerGraphicsStart+(obj->var4<<1))*32));
+	GBA_SET_SPRITE_TILES(obj->spr_id3, 4+((cki_playerGraphicsStart+(obj->var4<<1))*32));
+#else
 	GBA_SET_SPRITE_TILES(obj->spr_id1, (cki_playerGraphicsStart+(obj->var4<<1))*32); // 256
 	GBA_SET_SPRITE_TILES(obj->spr_id2, 4+((cki_playerGraphicsStart+(obj->var4<<1))*32));
 	GBA_SET_SPRITE_TILES(obj->spr_id3, 8+((cki_playerGraphicsStart+(obj->var4<<1))*32));
+#endif
+
+#ifdef LK_MULTIBOOT_ROM
+	if(obj->var1&0x1) {
+		GBA_SET_SPRITE_PAL(obj->spr_id1,15);
+		GBA_SET_SPRITE_PAL(obj->spr_id2,15);
+		GBA_SET_SPRITE_PAL(obj->spr_id3,15);
+	}else{
+		GBA_SET_SPRITE_PAL(obj->spr_id1,ck_localGameState.player_pics[obj->var4]);
+		GBA_SET_SPRITE_PAL(obj->spr_id2,ck_localGameState.player_pics[obj->var4]);
+		GBA_SET_SPRITE_PAL(obj->spr_id3,ck_localGameState.player_pics[obj->var4]);
+	}
+#endif
 
 	if(obj->ck_frame == &ck_KeenJumpShootUp || obj->ck_frame == &ck_KeenShootUp || obj->ck_frame == &ck_KeenHang ){
 		int drawwhite = obj->var1&0x1;
@@ -1858,6 +1888,7 @@ void LK_DrawKeen(ck_object *obj){
 	}else{
 		int drawwhite = obj->var1&0x1;
 		if(obj->var2>0x10) drawwhite = 1;
+
 		LK_CA_HackPlayerSprite(obj->ck_frame->offset[0],obj->ck_frame->offset[1],obj->ck_frame->offset[2], ck_localGameState.player_pics[obj->var4],0,obj->var4,drawwhite);
 	}
 /*	GBA_SET_SPRITE_TILES(obj->spr_id1, obj->ck_frame->offset[0]);
@@ -2825,19 +2856,33 @@ void LK_SpawnKeen(int x,int y, unsigned short player_id){
 	obj->frozen = false;
 	obj->frozen2 = false;
 
+#ifdef LK_MULTIBOOT_ROM
 	if(obj->spr_id1==128)
-		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,ck_localGameState.player_pics[obj->var4]);
 	else
-		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,ck_localGameState.player_pics[obj->var4]);
 	if(obj->spr_id2==128)
-		obj->spr_id2 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID);
+		obj->spr_id2 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,ck_localGameState.player_pics[obj->var4]);
 	else
-		GBA_RemakeSprite(obj->spr_id2,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID);
+		GBA_RemakeSprite(obj->spr_id2,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,ck_localGameState.player_pics[obj->var4]);
 	if(obj->spr_id3==128)
-		obj->spr_id3 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		obj->spr_id3 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,ck_localGameState.player_pics[obj->var4]);
 	else
-		GBA_RemakeSprite(obj->spr_id3,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
-
+		GBA_RemakeSprite(obj->spr_id3,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,ck_localGameState.player_pics[obj->var4]);
+#else
+	if(obj->spr_id1==128)
+		obj->spr_id1 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id1,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	if(obj->spr_id2==128)
+		obj->spr_id2 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id2,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,-1);
+	if(obj->spr_id3==128)
+		obj->spr_id3 = GBA_CreateSprite(GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id3,GBA_SCREEN_WIDTH+32, 0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+#endif
 	obj->animation_tick = 0;
 	obj->ck_frame = &ck_KeenStand;
 	obj->ck_render = &LK_DrawKeen;

@@ -1,4 +1,29 @@
 
+#ifdef LK_MULTIBOOT_ROM
+
+#define CK_SHOT_PIC (cki_itemsOffset) + 64
+#define CK_SHOT_SPLAT cki_itemsOffset + 64 + 2
+
+#define CK_BAD_SHOT_PIC (cki_itemsOffset) 
+#define CK_BAD_SHOT_SPLAT cki_itemsOffset + 2
+
+#define CK_GUN_PIC (cki_itemsOffset) + 4
+#define CK_GUN_PICKUP cki_itemsOffset + 64 + 4
+
+#define CK_BOMB_PIC cki_itemsOffset + 6
+#define CK_BOMB_PICKUP cki_itemsOffset + 64 + 6
+#define CK_BOMB_EXPLODE cki_itemsOffset + 128
+
+#define CK_HEAL_PIC1 cki_itemsOffset + 320 + 4
+#define CK_HEAL_PIC2 cki_itemsOffset + 320 + 6
+#define CK_HEAL_PIC3 cki_itemsOffset + 320 + 8
+#define CK_HEAL_PIC4 cki_itemsOffset + 320 + 10
+
+#define CK_HEAL_SHADOW1 cki_itemsOffset + 320 + 12
+#define CK_HEAL_SHADOW2 cki_itemsOffset + 320 + 14
+#define CK_HEAL_SHADOW3 cki_itemsOffset + 352 + 12
+#define CK_HEAL_SHADOW4 cki_itemsOffset + 352 + 14
+#else
 
 #define CK_SHOT_PIC (cki_itemsOffset) + 64
 #define CK_SHOT_SPLAT cki_itemsOffset + 64 + 4
@@ -22,7 +47,7 @@
 #define CK_HEAL_SHADOW2 cki_itemsOffset + 320 + 28
 #define CK_HEAL_SHADOW3 cki_itemsOffset + 352 + 24
 #define CK_HEAL_SHADOW4 cki_itemsOffset + 352 + 28
-
+#endif
 
 #define CK_BOTTOM_HALF 94
 #define CK_NEXT_LINE 47

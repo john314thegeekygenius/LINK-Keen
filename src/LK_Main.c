@@ -9,6 +9,10 @@
 // Include the LK_Heads.h
 #include "LK_Heads.h"
 
+#ifdef LK_MULTIBOOT_ROM
+MULTIBOOT_ROM
+#endif
+
 // Entery point of ROM
 int main(void) {
 

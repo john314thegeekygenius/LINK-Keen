@@ -94,11 +94,16 @@ void GBA_RemoveSprite(uint16_t id){
 
 // Function to create a new sprite in the list
 // returns index into sprite array
-GBA_SpriteIndex_t GBA_CreateSprite(int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer){
+GBA_SpriteIndex_t GBA_CreateSprite(int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer,int palette){
 	uint16_t size_bits = 0, shape_bits = 0;
 	uint16_t index = GBA_SpriteIndex; // Get the current index
-	uint16_t palette = 0;
+	uint16_t palflags = 0;
 	uint16_t i = 0;
+	
+	if(palette == -1){
+		palflags = GBA_SPRITE_256;
+		palette = 0;
+	}
 
 	// Set the sprite attributes
 	size_bits = size&0x3;//((int)size%4);
@@ -106,7 +111,7 @@ GBA_SpriteIndex_t GBA_CreateSprite(int x, int y, GBA_SpriteSizes size, uint16_t 
 
 	for(i = 0; i < GBA_SpriteIndex; i++){
 		if(GBA_SpriteList[i].a0 == 0xF0 && GBA_SpriteList[i].a1 == 0xA0 && GBA_SpriteList[i].a2 == 0){
-			GBA_SpriteList[i].a0 = y | GBA_SPRITE_256 | (shape_bits<<14);
+			GBA_SpriteList[i].a0 = y | palflags | (shape_bits<<14);
 			GBA_SpriteList[i].a1 = x | (size_bits<<14);
 			GBA_SpriteList[i].a2 = tileIndex | zLayer | (palette<<12);
 
@@ -119,23 +124,28 @@ GBA_SpriteIndex_t GBA_CreateSprite(int x, int y, GBA_SpriteSizes size, uint16_t 
 		GBA_SpriteIndex = 127; // lock in place
 	}
 
-	GBA_SpriteList[index].a0 = y | GBA_SPRITE_256 | (shape_bits<<14);
+	GBA_SpriteList[index].a0 = y | palflags | (shape_bits<<14);
 	GBA_SpriteList[index].a1 = x | (size_bits<<14);
 	GBA_SpriteList[index].a2 = tileIndex | zLayer | (palette<<12);
 
 	return index;
 };
 
-void GBA_RemakeSprite(GBA_SpriteIndex_t index, int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer){
+void GBA_RemakeSprite(GBA_SpriteIndex_t index, int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer, int palette){
 	uint16_t size_bits = 0, shape_bits = 0;
-	uint16_t palette = 0;
+	uint16_t palflags = 0;
+	
+	if(palette == -1){
+		palflags = GBA_SPRITE_256;
+		palette = 0;
+	}
 
 	// Set the sprite attributes
 	size_bits = size&0x3;//((int)size%4);
 	shape_bits = (size >> 2);
 
 	if(index<0||index>127) return; // bad sprite ID
-	GBA_SpriteList[index].a0 = y | GBA_SPRITE_256 | (shape_bits<<14);
+	GBA_SpriteList[index].a0 = y | palflags | (shape_bits<<14);
 	GBA_SpriteList[index].a1 = x | (size_bits<<14);
 	GBA_SpriteList[index].a2 = tileIndex | zLayer | (palette<<12);
 };
@@ -148,7 +158,7 @@ unsigned short GBA_SerialData[4];
 unsigned short GBA_SerialID = 0;
 unsigned short GBA_BaudRate = 0;
 unsigned char GBA_SerialError = 0;
-unsigned short GBA_TimeOutTick = 0;
+unsigned int GBA_TimeOutTick = 0;
 unsigned short GBA_SerialAvailable = 0;
 int GBA_SerialWaitTime = 40;
 
@@ -156,9 +166,10 @@ void GBA_InitSerial(unsigned short baud){
 	// Set this to 0 (Enable serial communication)
 	*(volatile uint16_t*)GBA_REG_RCNT = 0;
 
+	GBA_BaudRate = baud;
+
 	// Setup the baud rate and com type
 	*(volatile uint16_t*)GBA_REG_SCCNT_L = GBA_BaudRate | GBA_COM_MULTI;
-	GBA_BaudRate = baud;
 	
 	GBA_SerialAvailable = 1;
 	
@@ -166,6 +177,22 @@ void GBA_InitSerial(unsigned short baud){
 
 	GBA_FindGBAs();
 };
+
+
+void GBA_SetMultiplayer(){
+	// Set this to 0 (Enable serial communication)
+	*(volatile uint16_t*)GBA_REG_RCNT = 0;
+
+	// Setup the baud rate and com type
+	*(volatile uint16_t*)GBA_REG_SCCNT_L = GBA_BaudRate | GBA_COM_MULTI;
+	
+	// Assume this is true?
+	GBA_SerialAvailable = 1;
+	
+	GBA_SerialWaitTime = 40; // 40 is the minimum?
+
+};
+
 
 
 void GBA_FindGBAs(){
@@ -180,13 +207,15 @@ void GBA_FindGBAs(){
 	GBA_GameBoysConnected[2] = 
 	GBA_GameBoysConnected[3] = 0;		
 
+	GBA_SerialAvailable = 1;
+
 	// Make sure GBAs are connected
 
 	// Wait for all GameBoys to connect
 	GBA_TimeOutTick = 0;
 	while((*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_STATUS)==0){
 		GBA_TimeOutTick += 1;
-		if(GBA_TimeOutTick > GBA_SERIAL_TIMEOUT){
+		if(GBA_TimeOutTick > (GBA_SERIAL_TIMEOUT<<1)){
 			GBA_TimeOutTick = 0;
 			// No link connected
 			GBA_SerialAvailable = 0;
@@ -197,6 +226,7 @@ void GBA_FindGBAs(){
 			GBA_SerialAvailable = 0;
 			return;
 		}
+		GBA_Delay(1); // Do somthing to waste time?
 	}
 
 	// Put init packet head into register
@@ -206,7 +236,7 @@ void GBA_FindGBAs(){
 	*(volatile uint16_t*)GBA_REG_SCCNT_L |= GBA_COM_BUSY; 
 
 	// Wait for transfer to end
-	if(GBA_WaitSerial()){
+	if(GBA_WaitSerial()==0){
 
 		// Get GBA ID
 		GBA_SerialID = (*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ID)>>4;
@@ -234,16 +264,21 @@ void GBA_FindGBAs(){
 					}
 				}
 			}
-			if(GBA_NGameBoysConnected>1)
+			if(GBA_NGameBoysConnected>1){
+				GBA_SerialAvailable = 1;
 				break;
+			}
 		}
-		GBA_SerialAvailable = 1;
+	}else{
+		GBA_SerialAvailable = 0;
 	}
 
 };
 
 void GBA_RepairConnection(){
 	int i,c;
+	
+	GBA_SetMultiplayer();
 
 	// Clear some variables
 	GBA_SerialID = 0;
@@ -255,10 +290,15 @@ void GBA_RepairConnection(){
 	GBA_GameBoysConnected[3] = 0;		
 
 	// Put init packet head into register
-	GBA_Serial_SendWord(0x1234);
+	*(volatile uint16_t*)GBA_REG_SCCNT_H = 0xAAAA;
+
+	// Send start signal
+	*(volatile uint16_t*)GBA_REG_SCCNT_L |= GBA_COM_BUSY; 
+	
+	GBA_SerialAvailable = 1;
 
 	// Wait for transfer to end
-	if(GBA_WaitSerial()){
+	if(GBA_WaitSerial()==0){
 
 		// Get GBA ID
 		GBA_SerialID = (*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ID)>>4;
@@ -286,10 +326,20 @@ void GBA_RepairConnection(){
 					}
 				}
 			}
-			if(GBA_NGameBoysConnected>1)
+			if(GBA_NGameBoysConnected>1){
+				GBA_SerialAvailable = 1;
+				if(GBA_SerialID==0){
+					for(c = 0 ; c < 5; c++){
+						GBA_Serial_SendWord(0x1234);						
+						GBA_UpdateSerial();
+					}
+				}
 				break;
+			}
 		}
-		GBA_SerialAvailable = 1;
+	}else{		
+		// :(
+		GBA_SerialAvailable = 0;
 	}
 
 
@@ -311,18 +361,20 @@ short GBA_WaitSerial(void){
 			GBA_SerialError = GBA_TIMEOUT_ERROR;
 			return GBA_TIMEOUT_ERROR;
 		}
-
+		GBA_Delay(1); // Wait for some ticks
+/*
 		if(*(volatile uint16_t*)GBA_REG_SCCNT_L & GBA_COM_ERROR){
+			GBA_SetMultiplayer();
 			GBA_SerialError = GBA_LINK_ERROR;
 			return GBA_LINK_ERROR;
-		}
+		}*/
 	};
-	return 1;
+	return 0;
 };
 
 void GBA_UpdateSerial(void){
 	if(!GBA_SerialAvailable) return;
-	if(GBA_WaitSerial()){
+	if(GBA_WaitSerial()==0){
 		// Get the data
 		GBA_SerialData[0] = *(volatile uint16_t*)GBA_REG_SCD0;
 		GBA_SerialData[1] = *(volatile uint16_t*)GBA_REG_SCD1;
@@ -956,4 +1008,230 @@ void GBA_MixerPlaySample(int channel, GBA_SoundSample * sample, char loop){
 };
 
 
+
+//---------------------------------------------------------
+// MULTIBOOT REPLICATION FUNCTIONS (not mine... I haven't 
+//     figured them out completely just yet.)
+//---------------------------------------------------------
+
+
+void GBA_MB_Transfer(unsigned int data){
+	// Put the data into the register
+	*(volatile uint16_t *)GBA_REG_SCCNT_H = data;
+
+	// Set some things, and set active bit to on
+	*(volatile uint16_t *)GBA_REG_SCCNT_L |= GBA_COM_START;
+	
+	// Wait for active bit to turn off
+	while(*(volatile uint16_t *)GBA_REG_SCCNT_L & GBA_COM_START);
+	
+	// Put all the data into the variables
+	GBA_SerialData[0] = *(volatile uint32_t *)GBA_REG_SCD0;
+	GBA_SerialData[1] = *(volatile uint32_t *)GBA_REG_SCD1;
+	GBA_SerialData[2] = *(volatile uint32_t *)GBA_REG_SCD2;
+	GBA_SerialData[3] = *(volatile uint32_t *)GBA_REG_SCD3;
+};
+
+void GBA_MB_SetMultiboot(){
+	// Disable interupts durring transfer
+	*(volatile uint16_t*)GBA_INT_ENABLE = 0;
+
+	// Tell the gameboy we want Multi Play mode
+	*(volatile uint16_t *)GBA_REG_RCNT = 0;
+	*(volatile uint16_t *)GBA_REG_SCCNT_L = GBA_COM_MULTI | GBA_CLOCK_INTERNAL | GBA_MHZ_2;
+
+};
+
+void GBA_MB_StopMultiboot(){
+	// Tell the gameboy we want Normal mode
+	*(volatile uint16_t *)GBA_REG_RCNT = 0;
+	*(volatile uint16_t *)GBA_REG_SCCNT_L = GBA_COM_8BIT;
+
+	// Make sure to reenable interupts
+	*(volatile uint16_t*)GBA_INT_ENABLE = 1;	
+};
+
+int GBA_MB_GBAConnected(){
+	
+	if(*(volatile uint16_t *)GBA_REG_SCCNT_L & GBA_OPPONENT_SO_HI){
+		// This GBA is not the master GBA
+		return 0;
+	}
+	return 1;
+};
+
+static int MultiBoot(MultiBootParam* mb, unsigned int mode) __attribute__((naked));
+
+
+int GBA_MB_SendGameROM(unsigned char *ROM,unsigned int ROM_Size){
+//	unsigned int key, crc, crc2, seed;
+	uint16_t* ROM16 = (uint16_t*)ROM;
+//	uint32_t* ROM32 = (uint32_t*)ROM;
+//	struct crc_state crc_s;	
+	int i, halves;
+	int attempts, sends, clientMask = 0;
+	int clientErrors = 0;
+
+	int sendMask;
+	unsigned char data[4] = { 0x11, 0xff, 0xff, 0xff };
+    const int paletteCmd = 0x6300 | 0x81;
+
+	MultiBootParam mbp = (MultiBootParam){0};
+
+
+	// Tell the gameboy we want Multi Play mode
+	GBA_MB_SetMultiboot();
+	
+	if(!GBA_MB_GBAConnected()){
+		// This GBA is not the master GBA
+		GBA_SerialError = GBAMB_NOT_MASTER;
+		return 1;
+	}
+	
+	for (attempts = 0; attempts < 16; ++attempts) {
+		// Try to find GBAs 16 times
+        for (sends = 0; sends < 16; ++sends) {
+			// Send the locate command
+            GBA_MB_Transfer(0x6200);
+			// Mask each GBA to variable
+			// This works because each one returns 0x7200 + (2 * GBA Id)
+            if ((GBA_SerialData[1] & 0xFFF0) == 0x7200) 
+				clientMask |= (GBA_SerialData[1] & 0xF);
+            if ((GBA_SerialData[2] & 0xFFF0) == 0x7200) 
+				clientMask |= (GBA_SerialData[2] & 0xF);
+            if ((GBA_SerialData[3] & 0xFFF0) == 0x7200) 
+				clientMask |= (GBA_SerialData[3] & 0xF);
+        }
+
+        if (clientMask) {
+			// Gameboys have connected!
+            goto gbas_connected;
+        } else if (GBA_TEST_BUTTONS(GBA_BUTTON_B)) {
+			GBA_SerialError = GBAMB_CANCELED;
+            return 0;
+        }
+    }
+	GBA_SerialError = GBAMB_FAILED;
+	return 1;
+    
+gbas_connected:
+	
+	GBA_MB_Transfer(0x6100 | (clientMask&0xF));
+
+    if ((clientMask & 2) && GBA_SerialData[1] != (0x7200 | 2)) 
+		clientErrors |= (4 | 0x10000);
+    if ((clientMask & 4) && GBA_SerialData[2] != (0x7200 | 4)) 
+		clientErrors |= (4 | 0x20000);
+    if ((clientMask & 8) && GBA_SerialData[3] != (0x7200 | 8)) 
+		clientErrors |= (4 | 0x40000);
+
+	// Return any errors
+    if (clientErrors) 
+		return clientErrors;
+
+	// Send the ROM Header
+	for (halves = 0; halves < 0x60; ++halves) {
+        GBA_MB_Transfer(*ROM16++);
+        clientErrors = 0;
+        if ((clientMask & 2) && GBA_SerialData[1] != ((0x60 - halves) << 8 | 2)) 
+			clientErrors |= (5 | 0x10000);
+        if ((clientMask & 4) && GBA_SerialData[2] != ((0x60 - halves) << 8 | 4)) 
+			clientErrors |= (5 | 0x20000);
+        if ((clientMask & 8) && GBA_SerialData[3] != ((0x60 - halves) << 8 | 8)) 
+			clientErrors |= (5 | 0x40000);
+		// Return an error
+        if (clientErrors) 
+			return clientErrors;
+
+        if (GBA_TEST_BUTTONS(GBA_BUTTON_B)) {
+			GBA_SerialError = GBAMB_CANCELED;
+            return 0;
+        }
+    }
+	GBA_MB_Transfer(0x6200);
+
+    clientErrors = 0;
+    if ((clientMask & 2) && GBA_SerialData[1] != 2) clientErrors |= (4 | 0x10000);
+    if ((clientMask & 4) && GBA_SerialData[2] != 4) clientErrors |= (4 | 0x20000);
+    if ((clientMask & 8) && GBA_SerialData[3] != 8) clientErrors |= (4 | 0x40000);
+    if (clientErrors) return clientErrors;
+	
+	// Get encryption and crc seeds
+	GBA_MB_Transfer(0x6200 | clientMask);
+
+    clientErrors = 0;
+    if ((clientMask & 2) && GBA_SerialData[1] != (0x7200 | 2)) clientErrors |= (6 | 0x10000);
+    if ((clientMask & 4) && GBA_SerialData[2] != (0x7200 | 4)) clientErrors |= (6 | 0x20000);
+    if ((clientMask & 8) && GBA_SerialData[3] != (0x7200 | 8)) clientErrors |= (6 | 0x40000);
+    if (clientErrors) return clientErrors;
+
+	sendMask = clientMask;
+
+    while (sendMask) {
+        GBA_MB_Transfer(paletteCmd);
+
+        if ((clientMask & 2) && (GBA_SerialData[1] & 0xff00) == 0x7300) {
+            data[1] = GBA_SerialData[1];
+            sendMask &= ~2;
+        }
+
+        if ((clientMask & 4) && (GBA_SerialData[2] & 0xff00) == 0x7300) {
+            data[2] = GBA_SerialData[2];
+            sendMask &= ~4;
+        }
+
+        if ((clientMask & 8) && (GBA_SerialData[3] & 0xff00) == 0x7300) {
+            data[3] = GBA_SerialData[3];
+            sendMask &= ~8;
+        }
+
+        if (GBA_TEST_BUTTONS(GBA_BUTTON_B)) {
+			GBA_SerialError = GBAMB_CANCELED;
+            return 0;
+        }
+    }
+
+	data[0] += data[1] + data[2] + data[3];
+	GBA_MB_Transfer(0x6400 | data[0]);
+	clientErrors = 0;
+	if ((clientMask & 2) && (GBA_SerialData[1] & 0xff00) != 0x7300) clientErrors |= (4 | 0x10000);
+	if ((clientMask & 4) && (GBA_SerialData[2] & 0xff00) != 0x7300) clientErrors |= (4 | 0x20000);
+	if ((clientMask & 8) && (GBA_SerialData[3] & 0xff00) != 0x7300) clientErrors |= (4 | 0x40000);
+	if (clientErrors) return clientErrors;
+
+   if (GBA_TEST_BUTTONS(GBA_BUTTON_B)) {
+		GBA_SerialError = GBAMB_CANCELED;
+		return 0;
+	}
+
+	// Send ROM over
+	mbp.handshake_data = data[0];
+	mbp.client_data[0] = data[1];
+	mbp.client_data[1] = data[2];
+	mbp.client_data[2] = data[3];
+	mbp.palette_data = 0x81;
+	mbp.client_bit = clientMask;
+	mbp.boot_srcp = (const void*) ROM16;
+	mbp.boot_endp = (const void*) (ROM + ROM_Size);
+
+	if(MultiBoot(&mbp, 1)){
+		GBA_SerialError = GBAMB_FAILED;
+		return -1;
+	}
+	return 0;
+};
+
+static int MultiBoot(MultiBootParam* mb, unsigned int mode) {
+#ifndef __thumb__
+    __asm__(
+        "swi\t#0x250000\n\t"
+        "bx\tlr"
+    );
+#else
+    __asm__(
+        "swi\t#0x25\n\t"
+        "bx\tlr"
+    );
+#endif
+};
 

@@ -15,24 +15,33 @@
 #include "CK_Data/cwrist_tiles.h"
 #include "CK_Data/cwrist_font.h"
 
-
+#ifndef LK_MULTIBOOT_ROM
+// Include the ROM here???
+#include "ROM/BKEEN.h"
+#endif
 
 // Define some menus
 
 
 char* ck_SNewGame[] = {"Start Solo","Start Multi","Character","Map","Game Settings"};
-char* ck_SOptions[] = {"Music","Sound","Controls","Scorebox","Link Settings"};
+char* ck_SOptions[] = {"Music","Sound","Controls","Graphics","Link Settings"};
 char* ck_SGame[]    = {"Num Players","Num Bombs","Num Shots","Num Lives"};
+#ifdef LK_MULTIBOOT_ROM
+char* ck_SMainMenu[] = {"New Game","Options","Reconnect"};
+#else
 char* ck_SMainMenu[] = {"New Game","Options","Reconnect","Send Game"};
+#endif
+char* ck_SGraphics[] = {"Map Renderer","Scorebox"};
+
 
 char ck_BNewGame[] = {1,0,1,1,1};
 char ck_BOptions[] = {1,1,1,1,1};
 char ck_BGame[] = {1,1,1,1};
 char ck_BMainMenu[] = {1,1,1,0};
-
+char ck_BGraphics[] = {1,1};
 
 ck_Folder ck_FMainMenu,ck_FNewGame,ck_FOptions,ck_FSettings,ck_FReconnect,ck_FSendGame,
-			ck_FNPlayers, ck_FNBombs, ck_FNShots, ck_FNLives;
+			ck_FNPlayers, ck_FNBombs, ck_FNShots, ck_FNLives, ck_FGraphics;
 
 //////// New Game
 ck_Folder ck_FSoloGame  = {ck_CSoloGame, NULL,  NULL,  0, &ck_FNewGame,
@@ -70,16 +79,26 @@ ck_Folder ck_FScorebox  = {ck_CScorebox, NULL,  NULL,  0, &ck_FOptions,
 ck_Folder ck_FLinkSettings  = {ck_CLinkSettings, NULL,  NULL,  0, &ck_FOptions,
 	{NULL}};
 
+ck_Folder ck_FRenderer  = {ck_CRenderer, NULL,  NULL,  0, &ck_FGraphics,
+	{NULL}};
 
+
+#ifdef LK_MULTIBOOT_ROM
+ck_Folder ck_FMainMenu = {ck_CMainMenu,&ck_BMainMenu, &ck_SMainMenu, 3, NULL,
+	{&ck_FNewGame, &ck_FOptions, &ck_FReconnect, NULL}};
+#else
 ck_Folder ck_FMainMenu = {ck_CMainMenu,&ck_BMainMenu, &ck_SMainMenu, 4, NULL,
 	{&ck_FNewGame, &ck_FOptions, &ck_FReconnect, &ck_FSendGame, NULL}};
-
+#endif
 
 ck_Folder ck_FNewGame  = {ck_CNewGame, &ck_BNewGame,  &ck_SNewGame,  5, &ck_FMainMenu,
 	{&ck_FSoloGame, &ck_FJoinGame, &ck_FCharacter, &ck_FMap, &ck_FSettings, NULL}};
 
+ck_Folder ck_FGraphics  = {ck_CGraphics, &ck_BGraphics,  &ck_SGraphics,  2, &ck_FOptions,
+	{&ck_FRenderer,&ck_FScorebox,NULL}};
+
 ck_Folder ck_FOptions  = {ck_COptions, &ck_BOptions,  &ck_SOptions,  4, &ck_FMainMenu,
-	{&ck_FMusic,&ck_FSound,&ck_FControls,&ck_FScorebox,&ck_FLinkSettings,NULL}};
+	{&ck_FMusic,&ck_FSound,&ck_FControls,&ck_FGraphics,&ck_FLinkSettings,NULL}};
 
 ck_Folder ck_FReconnect  = {ck_CReconnect, NULL,  NULL,  0, &ck_FMainMenu,
 	{NULL}};
@@ -96,11 +115,7 @@ ck_Folder *ck_ControlPannelMenu = &ck_FMainMenu;
 short ck_selectorY = 0;
 short ck_selectorX = 0;
 uint16_t ck_selectorGlyph = 11;
-
-
 short ck_mapSelected = 0;
-
-
 
 
 uint16_t chr2gliph(char c){
@@ -268,9 +283,25 @@ void LK_US_TextBox(char *str){
 	int txtX = 15-(boxW>>1);
 	int txtY = 10;
 	int i,e;
-	
+
 	boxX -= 1;
 	boxY -= 1;
+
+
+	GBA_BG1_Map[(boxY<<5)+boxX] = 0x5A;
+	for(i=1;i<=boxW;i++){
+		GBA_BG1_Map[(boxY<<5)+boxX+i] = 0x5B;
+		GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+i] = 0x61;
+	}
+	GBA_BG1_Map[(boxY<<5)+boxX+boxW+1] = 0x5C;
+	GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX] = 0x60;
+	for(i=1;i<=boxH;i++){
+		GBA_BG1_Map[((boxY+i)<<5)+boxX] = 0x5D;
+		GBA_BG1_Map[((boxY+i)<<5)+boxX+boxW+1] = 0x5F;
+	}
+	GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+boxW+1] = 0x62;
+
+/*	
 	GBA_BG1_Map[(boxY<<5)+boxX] = 0x5A;
 	for(i=1;i<=boxW;i++){
 		GBA_BG1_Map[(boxY<<5)+boxX+i] = 0x5B;
@@ -283,6 +314,7 @@ void LK_US_TextBox(char *str){
 		GBA_BG1_Map[((boxY+i)<<5)+boxX+boxW+1] = 0x6A;
 	}
 	GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+boxW+1] = 0x78;
+*/
 	
 	boxX += 1;
 	boxY += 1;
@@ -304,6 +336,10 @@ void LK_US_TextBox(char *str){
 
 
 void LK_US_ResetTiles(){
+#ifdef LK_MULTIBOOT_ROM
+		GBA_DMA_Copy16((uint16_t*)GBA_PAL_BG_START,(uint16_t*)ck_graphics_palette,GBA_PAL_SIZE);
+#endif
+
 	// Copy the tileset into the block
 	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)cwrist_tiles_data,(cwrist_tiles_size)>>1);
 	// Copy the tileset into the block
@@ -314,7 +350,8 @@ void LK_US_ResetTiles(){
 	GBA_DMA_Copy16((uint16_t*)GBA_BG3_Tiles,(uint16_t*)cwrist_font_data,(cwrist_font_size)>>1);
 	// Finish the render of the background
 	GBA_FINISH_BG0(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_32x32);
-	
+	GBA_FINISH_BG1(GBA_BG_FRONT | CK_GBA_BLOCK1 | CK_GBA_MAP1 | GBA_BG_SIZE_32x32);
+	GBA_FINISH_BG2(0);	
 	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK1 | CK_GBA_MAP2 | GBA_BG_SIZE_32x32);
 	
 	LK_MP_ResetScroll();
@@ -354,22 +391,11 @@ uint16_t playerSpriteT = 0, playerSpriteB;
 void LK_US_DrawControlPannel(){
 	int i = 0, gamelaunched = 0;
 	char **map_data;
-/*
-	if(ck_localGameState.multiplayerAvailable){
-		gamelaunched = 0;
-		for(i = 0; i < 4; i++){
-			if((GBA_SerialData[i] & 0xFF00) == CK_LOCATE_PACKET){
-				gamelaunched = 1;
-				ck_localGameState.num_players = GBA_SerialData[i] & 0xFF;
-			}
-		}
-		if(gamelaunched){
-			ck_SNewGame[1] = "Join Game";
-			ck_ControlPannelDrawn = false;
-		}else{
-			ck_SNewGame[1] = "Start Multi";
-		}
-	}*/
+
+
+	// See if a GBA is connected
+	ck_localGameState.multibootAvailable = GBA_MB_GBAConnected();
+	
 	if(GBA_SerialID!=0){
 		ck_SNewGame[1] = "Join Game";
 	}else{
@@ -380,15 +406,18 @@ void LK_US_DrawControlPannel(){
 	if(ck_ControlPannelDrawn==false){
 		// Check for multiplayer
 		if(ck_localGameState.multiplayerAvailable){
-//			ck_BMainMenu[2] = 1; // Yay! :D
 			if(ck_localGameState.num_players>1){
 				ck_BNewGame[1] = 1;
 			}else{
 				ck_BNewGame[1] = 0; // :( no one to play with
 			}
 		}else{
-			ck_BMainMenu[3] = 0;
 			ck_BNewGame[1] = 0;
+		}
+		if(ck_localGameState.multibootAvailable){
+			ck_BMainMenu[3] = 1; // Yay! :D
+		}else{
+			ck_BMainMenu[3] = 0; // :( no one to send the ROM to
 		}
 		
 		
@@ -427,6 +456,8 @@ void LK_US_DrawControlPannel(){
 			case ck_CScorebox:
 			case ck_CLinkSettings:
 			case ck_CReconnect:
+			case ck_CGraphics:
+			case ck_CRenderer:
 			case ck_COptions:
 			for(i = 0; i < 6; i++)
 				GBA_BG0_Map[167+i] = 109+i;
@@ -473,9 +504,9 @@ void LK_US_DrawControlPannel(){
 
 
 		if(ck_ControlPannelMenu->menuName==ck_CMainMenu){
-			US_TextX = 7; US_TextY = 14;
+			US_TextX = 7; US_TextY = 19;
 			if(ck_localGameState.multiplayerAvailable){
-				LK_US_PrintXY("Link Connected");
+				LK_US_PrintXYMenu("Link Connected");
 //				US_TextX = 7; US_TextY = 15;
 //				LK_US_PrintXY(LK_US_Itoa(GBA_SerialID));
 			}
@@ -518,6 +549,49 @@ void LK_US_DrawControlPannel(){
 		case ck_CSoloGame:
 			LK_InitGame(true);
 		break;
+#ifndef LK_MULTIBOOT_ROM
+		case ck_CSendGame:
+			LK_US_ClearScreen();
+			US_TextX = 6; US_TextY = 8;
+			LK_US_TextBox("Sending ROM...");
+			// Send the ROM
+			GBA_MB_SendGameROM((uint8_t*)BKEEN_data,BKEEN_size);
+			GBA_MB_StopMultiboot();
+			// Continue as normal
+			LK_US_ClearScreen();
+			US_TextX = 8; US_TextY = 8;
+			LK_US_TextBox("ROM Sent");
+			GBA_SetMultiplayer();
+			GBA_Delay(100);
+			// Try to connect
+			for(i=0;i<16;i++){
+				GBA_InitSerial(GBA_COM_BAUD_9600);
+				LK_IN_ReadInput();
+				if((ck_lastInput & GBA_BUTTON_B) || GBA_SerialAvailable){
+					i=16;
+				}
+				ck_lastInput = 0;
+			}
+//			GBA_RepairConnection();
+			GBA_UpdateSerial();
+		
+			if(ck_ControlPannelMenu->returnto!=NULL){
+				GBA_ResetSprites();
+				// Go into the folder
+				ck_ControlPannelMenu = ck_ControlPannelMenu->returnto;
+				// Reset some variables
+				ck_selectorY = 0;
+				ck_selectorGlyph = 11;
+				// We need to redraw the scene
+				ck_ControlPannelDrawn = false;
+				// We might need to redraw the character later
+				ck_DrawnCharacter = false;
+				// Clear the flag
+				ck_lastInput = 0;
+				return;
+			}
+		break;
+#endif
 		case ck_CJoinGame:
 			LK_US_ClearScreen();
 			US_TextX = 3; US_TextY = 8;
@@ -554,8 +628,10 @@ void LK_US_DrawControlPannel(){
 			}
 			ck_localGameState.num_players = ck_selectorX;
 
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change value");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change value");
 
 		break;
 		case ck_CNBombs:
@@ -582,8 +658,10 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			ck_localGameState.start_bombs = ck_selectorX;
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change value");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change value");
 		break;
 		case ck_CNShots:
 			// Draw some UI
@@ -609,8 +687,10 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			ck_localGameState.start_shots = ck_selectorX;
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change value");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change value");
 		break;
 		case ck_CNLives:
 			// Draw some UI
@@ -699,8 +779,10 @@ void LK_US_DrawControlPannel(){
 				}
 				ck_localGameState.end_kills = ck_selectorX;
 			}
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change value");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change value");
 		break;
 		case ck_CCharacter:
 			ck_selectorX = ck_localGameState.player_pics[0];
@@ -709,10 +791,17 @@ void LK_US_DrawControlPannel(){
 				GBA_ResetSprites();
 				// Make it standing animation
 				LK_CA_HackPlayerSprite(0, 94, 0, ck_selectorX, 0,0,0);
-				playerSpriteT = GBA_CreateSprite(106, 72,GBA_SPR_16_16,0,GBA_SPRITE_ZTOP);
-				playerSpriteB = GBA_CreateSprite(106, 88,GBA_SPR_16_8, 0,GBA_SPRITE_ZTOP);
+				#ifdef LK_MULTIBOOT_ROM
+				playerSpriteT = GBA_CreateSprite(106, 72,GBA_SPR_16_16,0,GBA_SPRITE_ZTOP,ck_selectorX);
+				playerSpriteB = GBA_CreateSprite(106, 88,GBA_SPR_16_8, 0,GBA_SPRITE_ZTOP,ck_selectorX);
+				GBA_SET_SPRITE_TILES(playerSpriteT, cki_playerGraphicsStart*32);
+				GBA_SET_SPRITE_TILES(playerSpriteB, (cki_playerGraphicsStart*32)+2);
+				#else
+				playerSpriteT = GBA_CreateSprite(106, 72,GBA_SPR_16_16,0,GBA_SPRITE_ZTOP,-1);
+				playerSpriteB = GBA_CreateSprite(106, 88,GBA_SPR_16_8, 0,GBA_SPRITE_ZTOP,-1);
 				GBA_SET_SPRITE_TILES(playerSpriteT, cki_playerGraphicsStart*32);
 				GBA_SET_SPRITE_TILES(playerSpriteB, (cki_playerGraphicsStart*32)+4);
+				#endif
 				GBA_SET_FLIPH(playerSpriteT,1)
 				GBA_SET_FLIPH(playerSpriteB,1)
 				GBA_UPDATE_SPRITES()
@@ -735,8 +824,10 @@ void LK_US_DrawControlPannel(){
 				ck_lastInput = 0;
 			}
 			ck_localGameState.player_pics[0] = ck_selectorX;
-			US_TextX = 1; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change character");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 6; US_TextY = 14;
+			LK_US_PrintXYMenu("change character");
 
 		break;
 		case ck_CMap:
@@ -764,20 +855,22 @@ void LK_US_DrawControlPannel(){
 			LK_US_PrintGlyph(11);
 			US_TextX = 9; US_TextY = 7;
 			LK_US_PrintXY("Current Map:");
-			US_TextX = 12; US_TextY = 8;
-			LK_US_PrintXY(LK_US_Itoa(ck_mapSelected));
+//			US_TextX = 12; US_TextY = 8;
+//			LK_US_PrintXY(LK_US_Itoa(ck_mapSelected));
 			map_data = LK_MP_GetMapInfo(ck_mapSelected);
 			if(map_data!=NULL){
-				US_TextX = 9; US_TextY = 10;
+				US_TextX = 9; US_TextY = 9;
 				LK_US_PrintXY(map_data[0]);
-				US_TextX = 9; US_TextY = 12;
+				US_TextX = 9; US_TextY = 10;
 				LK_US_PrintXY(map_data[1]);
-				US_TextX = 9; US_TextY = 14;
+				US_TextX = 9; US_TextY = 11;
 				LK_US_PrintXY(map_data[2]);
 			}
 			ck_localGameState.level_id = ck_mapSelected;
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change value");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 9; US_TextY = 14;
+			LK_US_PrintXYMenu("change map");
 
 		break;
 
@@ -804,8 +897,10 @@ void LK_US_DrawControlPannel(){
 				ck_ControlPannelDrawn = false;
 			}
 			GBA_SerialWaitTime = ck_selectorX;
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change value");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change value");
 
 		break;
 		case ck_CReconnect:
@@ -847,6 +942,7 @@ void LK_US_DrawControlPannel(){
 
 		case ck_CMusic:
 
+#ifdef LK_MUSIC_ENABLED
 			if((ck_lastInput & GBA_BUTTON_A) || (ck_lastInput & GBA_BUTTON_LEFT) || (ck_lastInput & GBA_BUTTON_RIGHT)){
 				ck_localGameState.music_enabled = !ck_localGameState.music_enabled;
 				ck_ControlPannelDrawn = false;
@@ -860,11 +956,17 @@ void LK_US_DrawControlPannel(){
 			}else{
 				LK_US_PrintXY("Music Disabled");
 			}
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 or A to toggle");
+			US_TextX = 8; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 or A");
+			US_TextX = 7; US_TextY = 14;
+			LK_US_PrintXYMenu("to toggle music");
+#else
+			US_TextX = 8; US_TextY = 9;
+			LK_US_PrintXY("Music Disabled");
+#endif
 		break;
 		case ck_CSound:
-
+#ifdef LK_SOUND_ENABLED
 			if((ck_lastInput & GBA_BUTTON_A) || (ck_lastInput & GBA_BUTTON_LEFT) || (ck_lastInput & GBA_BUTTON_RIGHT)){
 				ck_localGameState.sound_enabled = !ck_localGameState.sound_enabled;
 				ck_ControlPannelDrawn = false;
@@ -881,8 +983,48 @@ void LK_US_DrawControlPannel(){
 
 				LK_US_PrintXY("Sound Disabled");
 			}
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 or A to toggle");
+			US_TextX = 8; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 or A");
+			US_TextX = 7; US_TextY = 14;
+			LK_US_PrintXYMenu("to toggle sound");
+#else
+			// Draw some UI
+			US_TextX = 8; US_TextY = 9;
+			LK_US_PrintXY("Sound Disabled");
+#endif
+		break;
+		case ck_CRenderer:
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Map renderer");
+			US_TextX = 7; US_TextY = 11;
+			if(ck_localGameState.map_renderer==0)
+				LK_US_PrintXY("Double Buffered");
+			else if(ck_localGameState.map_renderer==1)
+				LK_US_PrintXY("Fast Scrolling");
+
+			ck_selectorX = ck_localGameState.map_renderer;
+			if(ck_lastInput & GBA_BUTTON_LEFT){
+				ck_selectorX  -= 1;
+				if(ck_selectorX<0) ck_selectorX = 0;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			if(ck_lastInput & GBA_BUTTON_RIGHT){
+				ck_selectorX  += 1;
+				if(ck_selectorX>1) ck_selectorX = 1;
+				// Clear the flag
+				ck_lastInput = 0;
+				ck_ControlPannelDrawn = false;
+			}
+			ck_localGameState.map_renderer = ck_selectorX;
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change value");
 		break;
 		case ck_CScorebox:
 
@@ -973,8 +1115,11 @@ void LK_US_DrawControlPannel(){
 				}
 				ck_localGameState.ck_status_loc = ck_selectorX;
 			}
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change option");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change option");
+
 		break;
 		case ck_CControls:
 			if(ck_lastInput & GBA_BUTTON_UP){
@@ -1097,10 +1242,13 @@ void LK_US_DrawControlPannel(){
 			// Draw the selector
 			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
 			LK_US_PrintGlyph(ck_selectorGlyph+1);
-
-			US_TextX = 3; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \1 \3 to change control");
-
+/*
+ 			// Covers up the throw option :(
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change control");
+*/
 		break;
 
 		default:
@@ -1154,8 +1302,10 @@ void LK_US_DrawControlPannel(){
 			US_TextX = 7; US_TextY = 7+ck_selectorY;
 			LK_US_PrintGlyph(ck_selectorGlyph+1);
 
-			US_TextX = 4; US_TextY = 18;
-			LK_US_PrintXYMenu("Use \2 \4 to select menu");
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \2 \4 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("select menu");
 		break;
 	}
 };

@@ -269,8 +269,25 @@ void LK_MP_LoadMap(uint16_t mapid){
 			statusx += 6;
 		}
 	}
-	
 
+#ifdef LK_MULTIBOOT_ROM
+	// Copy the palette
+	GBA_DMA_Copy16((uint16_t*)GBA_PAL_BG_START,(uint16_t*)ck_tile_palette,GBA_PAL_SIZE);
+	// Copy the tileset into first block
+	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,24576>>1);
+
+	// Finish the render of the background
+	GBA_FINISH_BG0_4BIT(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_64x32);
+
+	// Finish the render of the background
+	GBA_FINISH_BG1_4BIT(GBA_BG_MID | CK_GBA_BLOCK0 | CK_GBA_MAP1 | GBA_BG_SIZE_64x32);
+
+	// Finish the render of the background
+	GBA_FINISH_BG2_4BIT(GBA_BG_FRONT | CK_GBA_BLOCK0 | CK_GBA_MAP2 | GBA_BG_SIZE_64x32);
+
+	// Finish the render of the background
+	GBA_FINISH_BG3_4BIT(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_32x32);
+#else
 	// Copy the tileset into first block
 	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,24576);
 
@@ -285,6 +302,8 @@ void LK_MP_LoadMap(uint16_t mapid){
 
 	// Finish the render of the background
 	GBA_FINISH_BG3(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_32x32);
+#endif
+
 	
 	// Can't go beyond border!
 	ck_cam_minx = 16;
@@ -307,7 +326,10 @@ void LK_MP_LoadMap(uint16_t mapid){
 
 
 const short CK_CAM_SPEED = 4;
-//short ck_mapdir = 0;
+int ck_mapposx = 0;
+int ck_mapposy = 0;
+int ck_mapbuffer = 0;
+
 
 void LK_MP_UpdateCamera(){
 
@@ -383,17 +405,44 @@ void LK_MP_UpdateCamera(){
 		ck_cam_y = (ck_level_height-22)<<3; // Don't go beyond
 	}
 
-	ck_cam_scrollx = ck_cam_x&0x7;//ck_cam_x - ((ck_cam_x>>3)<<3);
-	ck_cam_scrolly = ck_cam_y&0x7;//ck_cam_y - ((ck_cam_y>>3)<<3);
+	if(ck_localGameState.map_renderer==0){
+	
+		ck_cam_scrollx = ck_cam_x&0x7;//ck_cam_x - ((ck_cam_x>>3)<<3);
+		ck_cam_scrolly = ck_cam_y&0x7;//ck_cam_y - ((ck_cam_y>>3)<<3);
 
-	if(ck_last_cam_x != (ck_cam_x>>3)){
-		ck_last_cam_x = (ck_cam_x>>3);
-		ck_mapneeds_updated = true;
+		if(ck_last_cam_x != (ck_cam_x>>3)){
+			ck_last_cam_x = (ck_cam_x>>3);
+			ck_mapneeds_updated = true;
+		}
+
+		if(ck_last_cam_y != (ck_cam_y>>3)){
+			ck_last_cam_y = (ck_cam_y>>3);
+			ck_mapneeds_updated = true;
+		}
+
 	}
+	else if(ck_localGameState.map_renderer==1){
 
-	if(ck_last_cam_y != (ck_cam_y>>3)){
-		ck_last_cam_y = (ck_cam_y>>3);
-		ck_mapneeds_updated = true;
+		ck_cam_scrollx = ck_cam_x&0xFF;
+		ck_cam_scrolly = ck_cam_y%96;
+
+		if(ck_cam_x>=256&&ck_mapposx==0){
+			ck_mapposx = 1;
+			ck_mapneeds_updated = true;
+		}
+		if(ck_cam_x<256&&ck_mapposx==1){
+			ck_mapposx = 0;
+			ck_mapneeds_updated = true;
+		}
+
+		if(ck_cam_y>=96&&ck_mapposy==0){
+			ck_mapposy = 1;
+			ck_mapneeds_updated = true;
+		}
+		if(ck_cam_y<96&&ck_mapposy==1){
+			ck_mapposy = 0;
+			ck_mapneeds_updated = true;
+		}
 	}
 };
 
@@ -403,7 +452,8 @@ void LK_MP_UpdateMap(){
 	int i = 0;
 	uint16_t infob,infoc;
 	uint16_t tile, tileoff;
-	uint16_t tx, ty, tv, vy;
+	uint16_t tv, vy;
+	int tx, ty;
 	
 	for(i = 0; i < MAX_LEVEL_ANIMATIONS; i++){
 		tileoff = ck_map_animations[(i<<1)];
@@ -411,6 +461,13 @@ void LK_MP_UpdateMap(){
 		tv = ck_map_animations[(i<<1)+1];
 		vy = (tileoff/ck_level_width);
 		if(tv&0x8000 == 0x8000){
+			if(ck_localGameState.map_renderer==0){
+				ty = vy-(ck_cam_y>>3);
+				tx = (tileoff - (vy*ck_level_width)) - (ck_cam_x>>3);
+			}else if(ck_localGameState.map_renderer==1){
+				ty = vy- ((ck_cam_y/96)*12);
+				tx = (tileoff - (vy*ck_level_width)) - ((ck_cam_x>>8)<<5);
+			}
 			tv -= 0x8000;
 			tileoff += ck_level_size;
 			tile = (ck_levelbuff[tileoff]);
@@ -419,71 +476,194 @@ void LK_MP_UpdateMap(){
 			infob = (*ck_tileinfo)[tile+2];
 			infoc = (*ck_tileinfo)[tile+2];
 		}else{
+			if(ck_localGameState.map_renderer==0){
+				ty = vy-(ck_cam_y>>3);
+				tx = (tileoff - (vy*ck_level_width)) - (ck_cam_x>>3);
+			}else if(ck_localGameState.map_renderer==1){
+				ty = vy- ((ck_cam_y>>8)<<5);
+				tx = (tileoff - (vy*ck_level_width)) - ((ck_cam_x>>8)<<5);
+			}
 			tile = (ck_levelbuff[tileoff]);
 			infob = (*ck_tileinfo)[tile];
 			infoc = (*ck_tileinfo)[tile];
 		}
 		if((infoc>>9) && tv >= (infoc>>9)){
-			if(vy<=ck_cam_y+24&&(i-(vy*ck_level_width))<=ck_cam_x+34)
-				ck_mapneeds_updated = true;
 			ck_levelbuff[tileoff] = (infob)&0x1FF;
+			if(ck_localGameState.map_renderer==0){
+				if(tx>=0&&tx<32&&ty>=0&&ty<32){
+					tx += (ck_mapbuffer<<5);
+#ifdef LK_MULTIBOOT_ROM
+					if(tileoff >= ck_level_size){
+						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = ((infob)&0x1FF)+0x100;
+						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
+							*(uint16_t*)(GBA_BG2_Map+(ty<<5)+tx) = ((infob)&0x1FF)+0x100;
+					}else{
+						*(uint16_t*)(GBA_BG0_Map+(ty<<5)+tx) = ((infob)&0x1FF);
+					}
+#else
+					if(tileoff >= ck_level_size){
+						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = (infob)&0x1FF;
+						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
+							*(uint16_t*)(GBA_BG2_Map+(ty<<5)+tx) = (infob)&0x1FF;
+					}else{
+						*(uint16_t*)(GBA_BG0_Map+(ty<<5)+tx) = (infob)&0x1FF;
+					}
+#endif
+				}
+
+			}
+			else if(ck_localGameState.map_renderer==1){
+				if(tx>=0&&tx<64&&ty>=0&&ty<32){
+					if(tx>=32) tx += 992;
+#ifdef LK_MULTIBOOT_ROM
+					if(tileoff >= ck_level_size){
+						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = ((infob)&0x1FF)+0x100;
+						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
+							*(uint16_t*)(GBA_BG2_Map+(ty<<5)+tx) = ((infob)&0x1FF)+0x100;
+					}else{
+						*(uint16_t*)(GBA_BG0_Map+(ty<<5)+tx) = ((infob)&0x1FF);
+					}
+#else
+					if(tileoff >= ck_level_size){
+						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = (infob)&0x1FF;
+						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
+							*(uint16_t*)(GBA_BG2_Map+(ty<<5)+tx) = (infob)&0x1FF;
+					}else{
+						*(uint16_t*)(GBA_BG0_Map+(ty<<5)+tx) = (infob)&0x1FF;
+					}
+#endif
+				}
+			}
 			ck_map_animations[(i<<1)+1] -= (infoc>>9);
 		}
 		ck_map_animations[(i<<1)+1] += 0x0001;
 	}
 };
 
-int ck_mapbuffer = 0;
 
 void LK_MP_RenderMap(){
 	int bgoffset = 0;
-	int lvlx = (ck_cam_x>>3);
-	int lvly = (ck_cam_y>>3);
+	int lvlx = 0;
+	int lvly = 0;
 	int i = 0, e = 0, mvi = 0;
 	uint16_t * ftile = NULL;
-	int leveloff = ck_level_width-32;
+	int leveloff = 0;
+	int PX = 0, PY = 0;
+	
 
-	if(ck_mapneeds_updated){
-		// Swap the map buffer
-		if(ck_mapbuffer==0){
-			ck_mapbuffer = 32;
-		}else{
-			ck_mapbuffer = 0;
-		}
+	if(ck_localGameState.map_renderer==0){
+		if(ck_mapneeds_updated){
+			ck_mapneeds_updated = false;
 
-		ck_mapneeds_updated = false;
-		// Copy a region of the map to the screen memory
-		bgoffset = (lvly*ck_level_width)+lvlx;
-		mvi = (ck_mapbuffer<<5);
-		ftile = ( uint16_t*)&ck_levelbuff + (bgoffset + ck_level_size);
-		for(i = 0; i < 22; ++i){
-			for(e = 0; e < 32; e++){
-				*(uint16_t*)(GBA_BG0_Map+mvi) = (uint16_t)ck_levelbuff[bgoffset];
-				*(uint16_t*)(GBA_BG1_Map+mvi) = *ftile;
-				*(uint16_t*)(GBA_BG2_Map+mvi) = 0;
-				if(((*ck_tileinfo)[256+((*ftile)*3)+1]&0x8000))
-					*(uint16_t*)(GBA_BG2_Map+mvi) = *ftile;
-
-				++bgoffset;
-				++mvi;
-				++ftile;
+			lvlx = (ck_cam_x>>3);
+			lvly = (ck_cam_y>>3);
+			
+			leveloff = ck_level_width-32;
+			
+			// Swap the map buffer
+			if(ck_mapbuffer==0){
+				ck_mapbuffer = 32;
+			}else{
+				ck_mapbuffer = 0;
 			}
-			ftile += leveloff;
-			bgoffset += leveloff;
+
+			// Copy a region of the map to the screen memory
+			bgoffset = (lvly*ck_level_width)+lvlx;
+			mvi = (ck_mapbuffer<<5);
+			ftile = ( uint16_t*)&ck_levelbuff + (bgoffset + ck_level_size);
+			for(i = 0; i < 22; ++i){
+				for(e = 0; e < 32; e++){
+#ifdef LK_MULTIBOOT_ROM
+					*(uint16_t*)(GBA_BG0_Map+mvi) = ((uint16_t)ck_levelbuff[bgoffset]);
+					*(uint16_t*)(GBA_BG1_Map+mvi) = (*ftile)+0x100;
+					*(uint16_t*)(GBA_BG2_Map+mvi) = 0x100;
+					if(((*ck_tileinfo)[256+((*ftile)*3)+1]&0x8000))
+						*(uint16_t*)(GBA_BG2_Map+mvi) = (*ftile)+0x100;
+#else
+					*(uint16_t*)(GBA_BG0_Map+mvi) = (uint16_t)ck_levelbuff[bgoffset];
+					*(uint16_t*)(GBA_BG1_Map+mvi) = *ftile;
+					*(uint16_t*)(GBA_BG2_Map+mvi) = 0;
+					if(((*ck_tileinfo)[256+((*ftile)*3)+1]&0x8000))
+						*(uint16_t*)(GBA_BG2_Map+mvi) = *ftile;
+#endif
+					++bgoffset;
+					++mvi;
+					++ftile;
+				}
+				ftile += leveloff;
+				bgoffset += leveloff;
+			}
+		}
+			
+		if(ck_mapbuffer){
+			int soff = (ck_cam_scrollx)+(32<<3);
+			GBA_WAIT_VBLANK
+			*(volatile short*)GBA_REG_BG0HOFS = soff;
+			*(volatile short*)GBA_REG_BG1HOFS = soff;
+			*(volatile short*)GBA_REG_BG2HOFS = soff;
+			
+			*(volatile short*)GBA_REG_BG0VOFS = (ck_cam_scrolly);
+			*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
+			*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
+		}else{
+			GBA_WAIT_VBLANK
+			*(volatile short*)GBA_REG_BG0HOFS = (ck_cam_scrollx);
+			*(volatile short*)GBA_REG_BG1HOFS = (ck_cam_scrollx);
+			*(volatile short*)GBA_REG_BG2HOFS = (ck_cam_scrollx);
+			
+			*(volatile short*)GBA_REG_BG0VOFS = (ck_cam_scrolly);
+			*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
+			*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
 		}
 	}
+	else if(ck_localGameState.map_renderer==1){
+		if(ck_mapneeds_updated){
+			ck_mapneeds_updated = false;
 
-	if(ck_mapbuffer){
-		int soff = (ck_cam_scrollx)+(32<<3);
-		GBA_WAIT_VBLANK
-		*(volatile short*)GBA_REG_BG0HOFS = soff;
-		*(volatile short*)GBA_REG_BG1HOFS = soff;
-		*(volatile short*)GBA_REG_BG2HOFS = soff;
-		
-		*(volatile short*)GBA_REG_BG0VOFS = (ck_cam_scrolly);
-		*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
-		*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
-	}else{
+			lvlx = ck_cam_x>>8;
+			lvly = ck_cam_y/96;
+			
+			leveloff = ck_level_width-64;
+
+			mvi = 0;
+
+			// Copy a region of the map to the screen memory
+			for(i = 0; i < 32; ++i){
+				for(e = 0; e < 64; e++){
+					PX = e+(lvlx<<5);
+					PY = i+(lvly*12);
+					bgoffset = (PY*ck_level_width)+PX;
+					mvi = (i<<5)+e;
+					if(e>=32)
+						mvi += 992;
+
+					ftile = ( uint16_t*)&ck_levelbuff + (bgoffset + ck_level_size);
+					if(PX < ck_level_width){
+						if(PY < ck_level_height){
+#ifdef LK_MULTIBOOT_ROM
+							*(uint16_t*)(GBA_BG0_Map+mvi) = ((uint16_t)ck_levelbuff[bgoffset]);
+							*(uint16_t*)(GBA_BG1_Map+mvi) = (*ftile)+0x100;
+							*(uint16_t*)(GBA_BG2_Map+mvi) = 0x100;
+							if(((*ck_tileinfo)[256+((*ftile)*3)+1]&0x8000))
+								*(uint16_t*)(GBA_BG2_Map+mvi) = (*ftile)+0x100;
+#else							
+							*(uint16_t*)(GBA_BG0_Map+mvi) = (uint16_t)ck_levelbuff[bgoffset];
+							*(uint16_t*)(GBA_BG1_Map+mvi) = *ftile;
+							*(uint16_t*)(GBA_BG2_Map+mvi) = 0;
+							if(((*ck_tileinfo)[256+((*ftile)*3)+1]&0x8000))
+								*(uint16_t*)(GBA_BG2_Map+mvi) = *ftile;
+#endif
+							continue;
+						}
+						goto lvltootall;
+					}
+					goto lvltoowide;
+				}
+				lvltoowide:;
+			}
+			lvltootall:;
+		}
+
 		GBA_WAIT_VBLANK
 		*(volatile short*)GBA_REG_BG0HOFS = (ck_cam_scrollx);
 		*(volatile short*)GBA_REG_BG1HOFS = (ck_cam_scrollx);
@@ -493,6 +673,7 @@ void LK_MP_RenderMap(){
 		*(volatile short*)GBA_REG_BG1VOFS = (ck_cam_scrolly);
 		*(volatile short*)GBA_REG_BG2VOFS = (ck_cam_scrolly);
 	}
+
 
 	// Update the status bar
 	if(!ck_localGameState.update_scorebox)

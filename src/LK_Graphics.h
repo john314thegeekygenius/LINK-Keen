@@ -41,8 +41,13 @@ extern volatile uint16_t* GBA_BG3_Map   ;
 
 extern volatile uint16_t* GBA_BG_Palette;
 
+#ifndef LK_MULTIBOOT_ROM
 extern const unsigned char tilescreen_data[];
 extern const unsigned char timelabs_data[];
+#endif
+
+extern const unsigned short ck_graphics_palette [];
+extern const unsigned short ck_tile_palette[];
 
 #define CK_GBA_BLOCK0 0x04
 #define CK_GBA_BLOCK1 0x08

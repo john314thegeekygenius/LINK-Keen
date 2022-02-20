@@ -135,11 +135,17 @@ void LK_ACT_SpawnShadow(int x,int y, int id){
 	obj->clip_rects.clipW = 12;
 	obj->clip_rects.clipH = 12;
 
+#ifdef LK_MULTIBOOT_ROM
 	if(obj->spr_id1==128)
-		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
 	else
-		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
-
+		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
+#else
+	if(obj->spr_id1==128)
+		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+#endif
 	GBA_SET_FLIPH(obj->spr_id1,0)
 	GBA_SET_FLIPV(obj->spr_id1,0)
 
@@ -186,10 +192,17 @@ void LK_ACT_SpawnHealthShadow(int x,int y){
 	obj->clip_rects.clipW = 12;
 	obj->clip_rects.clipH = 12;
 
+#ifdef LK_MULTIBOOT_ROM
 	if(obj->spr_id1==128)
-		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID);
+		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,0);
 	else
-		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID);
+		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,0);
+#else
+	if(obj->spr_id1==128)
+		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_8, 0, GBA_SPRITE_ZMID,-1);
+#endif
 
 	GBA_SET_FLIPH(obj->spr_id1,0)
 	GBA_SET_FLIPV(obj->spr_id1,0)
@@ -349,10 +362,17 @@ void LK_ACT_SpawnItem(int x,int y,int id){
 	obj->clip_rects.clipW = 12;
 	obj->clip_rects.clipH = 12;
 
+#ifdef LK_MULTIBOOT_ROM
 	if(obj->spr_id1==128)
-		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
 	else
-		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID);
+		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,0);
+#else
+	if(obj->spr_id1==128)
+		obj->spr_id1 = GBA_CreateSprite(0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+	else
+		GBA_RemakeSprite(obj->spr_id1,0xF0, 0xA0, GBA_SPR_16_16, 0, GBA_SPRITE_ZMID,-1);
+#endif
 
 	GBA_SET_FLIPH(obj->spr_id1,0)
 	GBA_SET_FLIPV(obj->spr_id1,0)

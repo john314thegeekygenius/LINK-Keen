@@ -2,6 +2,10 @@
 #ifndef __GBA_DEFS__
 #define __GBA_DEFS__
 
+
+#define MULTIBOOT_ROM int __gba_multiboot;
+
+
 // We don't want to mix audio right now
 //#define GBA_MIX_MY_AUDIO 1
 
@@ -249,6 +253,11 @@ Address: 0x400001E -  Vertical scroll co-ordinate for BG3 (Write Only)
 #define GBA_FINISH_BG2(flags) *(volatile uint16_t*)GBA_REG_BG2CNT = flags | GBA_BG_256COLORS;
 #define GBA_FINISH_BG3(flags) *(volatile uint16_t*)GBA_REG_BG3CNT = flags | GBA_BG_256COLORS;
 
+#define GBA_FINISH_BG0_4BIT(flags) *(volatile uint16_t*)GBA_REG_BG0CNT = flags ;
+#define GBA_FINISH_BG1_4BIT(flags) *(volatile uint16_t*)GBA_REG_BG1CNT = flags ;
+#define GBA_FINISH_BG2_4BIT(flags) *(volatile uint16_t*)GBA_REG_BG2CNT = flags ;
+#define GBA_FINISH_BG3_4BIT(flags) *(volatile uint16_t*)GBA_REG_BG3CNT = flags ;
+
 /*
     	GBA_BG_BACK         | /* priority, 0 is highest, 3 is lowest 
         (CHAR_BLOCK << 2)  | /* the char block the image data is stored in 
@@ -343,8 +352,8 @@ typedef uint16_t GBA_SpriteIndex_t;
 
 // Function to create a new sprite in the list
 // returns index into sprite array
-GBA_SpriteIndex_t GBA_CreateSprite(int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer);
-void GBA_RemakeSprite(GBA_SpriteIndex_t index, int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer);
+GBA_SpriteIndex_t GBA_CreateSprite(int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer, int palette);
+void GBA_RemakeSprite(GBA_SpriteIndex_t index, int x, int y, GBA_SpriteSizes size, uint16_t tileIndex, int zLayer, int palette);
 
 #define GBA_SET_SPRITE_CLEAR(index) \
 	if((index)>=0&&(index)<128){\
@@ -352,6 +361,12 @@ void GBA_RemakeSprite(GBA_SpriteIndex_t index, int x, int y, GBA_SpriteSizes siz
 	GBA_SpriteList[(index)].a1 = GBA_SCREEN_HEIGHT+32; \
 	GBA_SpriteList[(index)].a2 = 0; \
 	GBA_SpriteList[(index)].a3 = 0; \
+	}
+
+#define GBA_SET_SPRITE_PAL(index,palette)\
+	if((index)>=0&&(index)<128){\
+	GBA_SpriteList[(index)].a2 &= 0xFFF; \
+	GBA_SpriteList[(index)].a2 |= ((palette)<<12); \
 	}
 	
 #define GBA_SET_SPRITE_POSITION(index,x,y) \
@@ -726,7 +741,6 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_LINK_ERROR     0x01
 #define GBA_TIMEOUT_ERROR  0x02
 
-
 // Returns 0 if error, 1 if all GBAs ready
 #define GBA_COM_STATUS 0x08 // READ ONLY
 
@@ -738,6 +752,7 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 
 // Set to 1 as master to start transfer
 #define GBA_COM_BUSY 0x80 // READ ONLY IF SLAVE
+#define GBA_COM_START 0x80 // Same as busy bit
 
 #define GBA_COM_DISCONNECTED 0xFFFF
 #define GBA_COM_NODATA 0x00
@@ -747,6 +762,11 @@ These registers are automatically reset ot 0xFFFF on transfer start.
 #define GBA_COM_16BIT 0x1000
 #define GBA_COM_MULTI 0x2000
 #define GBA_COM_UART 0x3000
+
+
+#define GBA_OPPONENT_SO_HI 0x04
+#define GBA_CLOCK_INTERNAL 0x01
+#define GBA_MHZ_2 0x02
 
 #define GBA_S_MAX_WAIT 80 // The maximum amount of time needed to wait for the data to get thru
 
@@ -759,6 +779,7 @@ extern unsigned short GBA_SerialAvailable;
 extern int GBA_SerialWaitTime;
 
 void GBA_InitSerial(unsigned short baud);
+void GBA_SetMultiplayer();
 void GBA_FindGBAs();
 void GBA_RepairConnection();
 short GBA_WaitSerial(void);
@@ -827,5 +848,49 @@ E   (I) = Interrupt (0 - Disable, 1 - IRQ when bits 4,5, or 6 become set)
 
 */
 
+
+/////////////////////////////////////////////////////////////////////
+//        MULTI_BOOT Stuff
+
+
+// Special thanks to Xilefian on the GBADev Discord
+// 
+// https://github.com/felixjones/agbabi/tree/multiboot
+//
+// Basically all the code is based / riped from them.
+//
+
+typedef struct MultiBootParam {
+    unsigned int reserved1[5];
+    unsigned char handshake_data;
+    unsigned char padding;
+    unsigned short handshake_timeout;
+    unsigned char probe_count;
+    unsigned char client_data[3];
+    unsigned char palette_data;
+    unsigned char response_bit;
+    unsigned char client_bit;
+    unsigned char reserved2;
+    const void* boot_srcp;
+    const void* boot_endp;
+    const void* masterp;
+    const void* reserved3[3];
+    unsigned int system_work2[4];
+    unsigned char sendflag;
+    unsigned char probe_target_bit;
+    unsigned char check_wait;
+    unsigned char server_type;
+} MultiBootParam;
+
+void GBA_MB_SetMultiboot();
+int GBA_MB_GBAConnected();
+int GBA_MB_SendGameROM(unsigned char *ROM,unsigned int ROM_Size);
+void GBA_MB_Transfer(unsigned int data);
+
+
+// Error codes
+#define GBAMB_NOT_MASTER 	0x80
+#define GBAMB_CANCELED 		0x81
+#define GBAMB_FAILED 		0x82
 
 #endif

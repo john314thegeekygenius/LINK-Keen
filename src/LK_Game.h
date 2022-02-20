@@ -19,6 +19,7 @@ typedef struct ck_gameState {
 	boolean in_game; // Is the player in a game
 	boolean game_over; // Is the round over
 	boolean multiplayerAvailable; // Is another GBA connected
+	boolean multibootAvailable; // Is multiboot available
 	boolean multiplayerGame; // Is the current match a multiplayer one
 	short num_players; // How many players are gona play
 	unsigned short player_ips[4]; // IP of players
@@ -52,6 +53,8 @@ typedef struct ck_gameState {
 
 	boolean music_enabled; // Is the music enabled
 	boolean sound_enabled; // Is the sound enabled
+	
+	int map_renderer; // Which renderer do we use
 
 }ck_gameState;
 

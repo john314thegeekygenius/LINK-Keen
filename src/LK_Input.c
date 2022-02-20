@@ -19,8 +19,11 @@ void LK_IN_ReadInput(){
 		ck_curInput = ~GBA_BUTTONS;
 
 		if(!ck_localGameState.multiplayerGame){
-			ck_localGameState.ck_keeninputs[GBA_SerialID] = ck_curInput;
-			ck_localGameState.ck_lastkeeninputs[GBA_SerialID] = ck_lastInput;
+			int i;
+			for(i = 0; i < 4; i++){
+				ck_localGameState.ck_keeninputs[i] = ck_curInput;
+				ck_localGameState.ck_lastkeeninputs[i] = ck_lastInput;
+			}
 		}
 	}
 };

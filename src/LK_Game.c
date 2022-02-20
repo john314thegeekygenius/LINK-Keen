@@ -62,19 +62,20 @@ void LK_EndMatch(){
 		
 		boxX -= 1;
 		boxY -= 1;
+
 		GBA_BG1_Map[(boxY<<5)+boxX] = 0x5A;
 		for(i=1;i<=boxW;i++){
 			GBA_BG1_Map[(boxY<<5)+boxX+i] = 0x5B;
-			GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+i] = 0x6C;
+			GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+i] = 0x61;
 		}
 		GBA_BG1_Map[(boxY<<5)+boxX+boxW+1] = 0x5C;
-		GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX] = 0x6B;
+		GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX] = 0x60;
 		for(i=1;i<=boxH;i++){
 			GBA_BG1_Map[((boxY+i)<<5)+boxX] = 0x5D;
-			GBA_BG1_Map[((boxY+i)<<5)+boxX+boxW+1] = 0x6A;
+			GBA_BG1_Map[((boxY+i)<<5)+boxX+boxW+1] = 0x5F;
 		}
-		GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+boxW+1] = 0x78;
-		
+		GBA_BG1_Map[((boxY+boxH+1)<<5)+boxX+boxW+1] = 0x62;
+
 		boxX += 1;
 		boxY += 1;
 
@@ -163,6 +164,7 @@ void LK_EndMatch(){
 #define CK_TIMEOUT_TIMER 0xFFFF
 
 void LK_IntroDemo(){
+#ifndef LK_MULTIBOOT_ROM
 	int i,e,f, timeout;
 
 	volatile uint16_t* GBA_BG_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(20);
@@ -223,9 +225,11 @@ done1:
 	
 	while(!((~GBA_BUTTONS)&GBA_BUTTON_A));
 	while(((~GBA_BUTTONS)&GBA_BUTTON_A));
-	
+
+#endif
+
 	// Clear all the tiles to blank
-	GBA_DMA_MemSet32((uint32_t*)GBA_VRAM,0,128*128);
+	GBA_DMA_MemSet32((uint32_t*)GBA_VRAM,0x96,128*128);
 
 };
 
@@ -275,6 +279,7 @@ void LK_NukeGameState(){
 
 	ck_localGameState.music_enabled = true;
 	ck_localGameState.sound_enabled = true;
+	ck_localGameState.map_renderer = 0; // Use default old renderer
 
 	ck_localGameState.music_enabled = false; // HACKED: To stop the music from making me go insane
 
@@ -475,10 +480,10 @@ void LK_DoGameLoop(void){
 			// Uh oh!
 			LK_US_ThrowError("Link Error");
 			LK_US_ThrowError(LK_US_Htoa16(d));
-
 			ck_localGameState.multiplayerGame = false;
-			GBA_NGameBoysConnected = 1;
-			GBA_SerialAvailable = 0;
+			// Why were these set?
+//			GBA_NGameBoysConnected = 1;
+//			GBA_SerialAvailable = 0;
 			GBA_SerialError = 0;
 			GBA_ClearSerial();
 		}
