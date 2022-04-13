@@ -23,6 +23,7 @@ uint16_t **ck_tileinfo;
 int ck_level_size = 0;
 
 boolean ck_mapneeds_updated = false;
+boolean ck_mapneeds_updated2 = false;
 
 // Camera stuffs
 
@@ -41,6 +42,7 @@ void LK_MP_SetTile(uint16_t x, uint16_t y, uint16_t tile, uint16_t plane){
 	ck_levelbuff[(y*ck_level_width)+x+(ck_level_size*plane)] = tile;
 	// Yes?
 	ck_mapneeds_updated = true;
+	ck_mapneeds_updated2 = true;
 };
 
 uint16_t LK_MP_GetTile(uint16_t x, uint16_t y, uint16_t plane){
@@ -71,6 +73,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 	ck_level_size = ck_level_width*ck_level_height;
 
 	GBA_DMA_MemSet16(ck_map_animations,0,MAX_LEVEL_ANIMATIONS*2);
+
 
 	// Copy the map into the buffer
 	animationID = 0;
@@ -216,12 +219,28 @@ void LK_MP_LoadMap(uint16_t mapid){
 		}
 	}
 
-	// Clear the video maps
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0,32*24);
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*24);
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*24);
+	#ifdef LK_4BPP_MAPS
+		// Reset the map info
+		GBA_BG0_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(0);
+		GBA_BG1_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(4);
+		GBA_BG2_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(8);
+		GBA_BG3_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(12);
 
-	GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0xD0,32*24);
+		// Clear the video maps
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0,64*64);
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0x100,64*64);
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0x100,64*64);
+
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0xD0,64*64);
+	#else
+
+		// Clear the video maps
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG0_Map,0,32*24);
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG1_Map,0,32*24);
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG2_Map,0,32*24);
+
+		GBA_DMA_MemSet16((uint16_t*)GBA_BG3_Map,0xD0,32*24);
+	#endif
 	
 	// Draw the status bar
 	if(ck_localGameState.ck_status_type==1){
@@ -270,23 +289,24 @@ void LK_MP_LoadMap(uint16_t mapid){
 		}
 	}
 
-#ifdef LK_MULTIBOOT_ROM
+#ifdef LK_4BPP_MAPS
+
 	// Copy the palette
 	GBA_DMA_Copy16((uint16_t*)GBA_PAL_BG_START,(uint16_t*)ck_tile_palette,GBA_PAL_SIZE);
 	// Copy the tileset into first block
-	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,24576>>1);
+	GBA_DMA_Copy16((uint16_t*)GBA_BG1_Tiles,(uint16_t*)*ck_level_tileset,24576>>1);
 
 	// Finish the render of the background
-	GBA_FINISH_BG0_4BIT(GBA_BG_BACK | CK_GBA_BLOCK0 | CK_GBA_MAP0 | GBA_BG_SIZE_64x32);
+	GBA_FINISH_BG0_4BIT(GBA_BG_BACK | CK_GBA_BLOCK1 | CK_GBA_MAP0 | GBA_BG_SIZE_64x64);
 
 	// Finish the render of the background
-	GBA_FINISH_BG1_4BIT(GBA_BG_MID | CK_GBA_BLOCK0 | CK_GBA_MAP1 | GBA_BG_SIZE_64x32);
+	GBA_FINISH_BG1_4BIT(GBA_BG_MID | CK_GBA_BLOCK1 | 0x400 | GBA_BG_SIZE_64x64);
 
 	// Finish the render of the background
-	GBA_FINISH_BG2_4BIT(GBA_BG_FRONT | CK_GBA_BLOCK0 | CK_GBA_MAP2 | GBA_BG_SIZE_64x32);
+	GBA_FINISH_BG2_4BIT(GBA_BG_FRONT | CK_GBA_BLOCK1 | 0x800 | GBA_BG_SIZE_64x64);
 
 	// Finish the render of the background
-	GBA_FINISH_BG3_4BIT(GBA_BG_TOP | CK_GBA_BLOCK0 | CK_GBA_MAP3 | GBA_BG_SIZE_32x32);
+	GBA_FINISH_BG3_4BIT(GBA_BG_TOP | CK_GBA_BLOCK1 | 0xC00 | GBA_BG_SIZE_32x32);
 #else
 	// Copy the tileset into first block
 	GBA_DMA_Copy16((uint16_t*)GBA_BG0_Tiles,(uint16_t*)*ck_level_tileset,24576);
@@ -322,6 +342,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 	*(volatile short*)GBA_REG_BG3VOFS = 0;
 	
 	ck_mapneeds_updated = true;
+	ck_mapneeds_updated2 = true;
 };
 
 
@@ -423,25 +444,32 @@ void LK_MP_UpdateCamera(){
 	}
 	else if(ck_localGameState.map_renderer==1){
 
-		ck_cam_scrollx = ck_cam_x&0xFF;
-		ck_cam_scrolly = ck_cam_y%96;
 
-		if(ck_cam_x>=256&&ck_mapposx==0){
-			ck_mapposx = 1;
-			ck_mapneeds_updated = true;
+		if(ck_level_width>66){
+			ck_cam_scrollx = ck_cam_x&0xFF;
+			if(ck_cam_x>=256&&ck_mapposx==0){
+				ck_mapposx = 1;
+				ck_mapneeds_updated2 = true;
+			}
+			if(ck_cam_x<256&&ck_mapposx==1){
+				ck_mapposx = 0;
+				ck_mapneeds_updated2 = true;
+			}
+		}else{
+			ck_cam_scrollx = ck_cam_x;
 		}
-		if(ck_cam_x<256&&ck_mapposx==1){
-			ck_mapposx = 0;
-			ck_mapneeds_updated = true;
-		}
-
-		if(ck_cam_y>=96&&ck_mapposy==0){
-			ck_mapposy = 1;
-			ck_mapneeds_updated = true;
-		}
-		if(ck_cam_y<96&&ck_mapposy==1){
-			ck_mapposy = 0;
-			ck_mapneeds_updated = true;
+		if(ck_level_height>66){
+			ck_cam_scrolly = ck_cam_y&0xFF;
+			if(ck_cam_y>=256&&ck_mapposy==0){
+				ck_mapposy = 1;
+				ck_mapneeds_updated2 = true;
+			}
+			if(ck_cam_y<256&&ck_mapposy==1){
+				ck_mapposy = 0;
+				ck_mapneeds_updated2 = true;
+			}
+		}else{
+			ck_cam_scrolly = ck_cam_y;
 		}
 	}
 };
@@ -465,7 +493,7 @@ void LK_MP_UpdateMap(){
 				ty = vy-(ck_cam_y>>3);
 				tx = (tileoff - (vy*ck_level_width)) - (ck_cam_x>>3);
 			}else if(ck_localGameState.map_renderer==1){
-				ty = vy- ((ck_cam_y/96)*12);
+				ty = vy- ((ck_cam_y>>8)<<5);
 				tx = (tileoff - (vy*ck_level_width)) - ((ck_cam_x>>8)<<5);
 			}
 			tv -= 0x8000;
@@ -492,7 +520,7 @@ void LK_MP_UpdateMap(){
 			if(ck_localGameState.map_renderer==0){
 				if(tx>=0&&tx<32&&ty>=0&&ty<32){
 					tx += (ck_mapbuffer<<5);
-#ifdef LK_MULTIBOOT_ROM
+#ifdef LK_4BPP_MAPS
 					if(tileoff >= ck_level_size){
 						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = ((infob)&0x1FF)+0x100;
 						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
@@ -513,9 +541,11 @@ void LK_MP_UpdateMap(){
 
 			}
 			else if(ck_localGameState.map_renderer==1){
-				if(tx>=0&&tx<64&&ty>=0&&ty<32){
+#ifdef LK_4BPP_MAPS
+				if(tx>=0&&tx<64&&ty>=0&&ty<64){
 					if(tx>=32) tx += 992;
-#ifdef LK_MULTIBOOT_ROM
+					if(ty>=32) ty += 32;
+
 					if(tileoff >= ck_level_size){
 						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = ((infob)&0x1FF)+0x100;
 						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
@@ -524,6 +554,8 @@ void LK_MP_UpdateMap(){
 						*(uint16_t*)(GBA_BG0_Map+(ty<<5)+tx) = ((infob)&0x1FF);
 					}
 #else
+				if(tx>=0&&tx<64&&ty>=0&&ty<64){
+					if(tx>=32) tx += 992;
 					if(tileoff >= ck_level_size){
 						*(uint16_t*)(GBA_BG1_Map+(ty<<5)+tx) = (infob)&0x1FF;
 						if(((*ck_tileinfo)[256+(((infob)&0x1FF)*3)+1]&0x8000))
@@ -550,7 +582,6 @@ void LK_MP_RenderMap(){
 	int leveloff = 0;
 	int PX = 0, PY = 0;
 	
-
 	if(ck_localGameState.map_renderer==0){
 		if(ck_mapneeds_updated){
 			ck_mapneeds_updated = false;
@@ -573,7 +604,7 @@ void LK_MP_RenderMap(){
 			ftile = ( uint16_t*)&ck_levelbuff + (bgoffset + ck_level_size);
 			for(i = 0; i < 22; ++i){
 				for(e = 0; e < 32; e++){
-#ifdef LK_MULTIBOOT_ROM
+#ifdef LK_4BPP_MAPS
 					*(uint16_t*)(GBA_BG0_Map+mvi) = ((uint16_t)ck_levelbuff[bgoffset]);
 					*(uint16_t*)(GBA_BG1_Map+mvi) = (*ftile)+0x100;
 					*(uint16_t*)(GBA_BG2_Map+mvi) = 0x100;
@@ -617,30 +648,32 @@ void LK_MP_RenderMap(){
 		}
 	}
 	else if(ck_localGameState.map_renderer==1){
-		if(ck_mapneeds_updated){
-			ck_mapneeds_updated = false;
+		if(ck_mapneeds_updated2){
+			ck_mapneeds_updated2 = false;
 
 			lvlx = ck_cam_x>>8;
-			lvly = ck_cam_y/96;
+			lvly = ck_cam_y>>8;
 			
 			leveloff = ck_level_width-64;
 
 			mvi = 0;
 
 			// Copy a region of the map to the screen memory
-			for(i = 0; i < 32; ++i){
+			for(i = 0; i < 64; ++i){
 				for(e = 0; e < 64; e++){
 					PX = e+(lvlx<<5);
-					PY = i+(lvly*12);
+					PY = i+(lvly<<5);
 					bgoffset = (PY*ck_level_width)+PX;
 					mvi = (i<<5)+e;
 					if(e>=32)
 						mvi += 992;
+					if(i>=32)
+						mvi += 32<<5;
 
 					ftile = ( uint16_t*)&ck_levelbuff + (bgoffset + ck_level_size);
 					if(PX < ck_level_width){
 						if(PY < ck_level_height){
-#ifdef LK_MULTIBOOT_ROM
+#ifdef LK_4BPP_MAPS
 							*(uint16_t*)(GBA_BG0_Map+mvi) = ((uint16_t)ck_levelbuff[bgoffset]);
 							*(uint16_t*)(GBA_BG1_Map+mvi) = (*ftile)+0x100;
 							*(uint16_t*)(GBA_BG2_Map+mvi) = 0x100;

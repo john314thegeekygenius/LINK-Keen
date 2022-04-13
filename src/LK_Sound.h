@@ -29,7 +29,7 @@
 #define CK_SND_DORR_OPEN		20
 
 #define CK_NUM_SOUNDS 21
-#define CK_NUM_SONGS 16
+#define CK_NUM_SONGS 14
 
 void LK_SD_PlaySound(int id);
 void LK_SD_StopSounds();

@@ -336,8 +336,14 @@ void LK_US_TextBox(char *str){
 
 
 void LK_US_ResetTiles(){
-#ifdef LK_MULTIBOOT_ROM
-		GBA_DMA_Copy16((uint16_t*)GBA_PAL_BG_START,(uint16_t*)ck_graphics_palette,GBA_PAL_SIZE);
+#ifdef LK_4BPP_MAPS
+	GBA_DMA_Copy16((uint16_t*)GBA_PAL_BG_START,(uint16_t*)ck_graphics_palette,GBA_PAL_SIZE);
+
+	// Reset the map info
+	GBA_BG0_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(0);
+	GBA_BG1_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(2);
+	GBA_BG2_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(4);
+	GBA_BG3_Map   = (volatile uint16_t*)GBA_SCREEN_BLOCK(6);
 #endif
 
 	// Copy the tileset into the block
@@ -906,7 +912,15 @@ void LK_US_DrawControlPannel(){
 		case ck_CReconnect:
 			// Try to connect
 			GBA_RepairConnection();
-			GBA_UpdateSerial();
+
+/*			LK_US_ClearScreen();
+			US_TextX = 6; US_TextY = 8;
+			LK_US_TextBox(LK_US_Itoa(GBA_NGameBoysConnected));
+			GBA_Delay(2000);
+*/
+
+			ck_localGameState.num_players = GBA_NGameBoysConnected;
+
 		
 			if(ck_ControlPannelMenu->returnto!=NULL){
 				GBA_ResetSprites();
@@ -1345,7 +1359,7 @@ void LK_US_ResetROM(){
 	// Fix connection
 	ck_localGameState.multiplayerAvailable = tmpA;
 	ck_localGameState.multiplayerGame = false;
-	if(GBA_NGameBoysConnected > 2){
+	if(GBA_NGameBoysConnected > 1){
 		ck_localGameState.num_players = GBA_NGameBoysConnected;
 	}
 

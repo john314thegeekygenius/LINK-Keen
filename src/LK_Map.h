@@ -3,6 +3,9 @@
 #define __LK_MAP__
 
 
+#define LK_4BPP_MAPS
+
+// Make this 90?
 #define MAX_LEVEL_WIDTH 60
 #define MAX_LEVEL_HEIGHT 60
 #define MAX_LEVEL_ANIMATIONS 64

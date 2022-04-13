@@ -279,9 +279,9 @@ void LK_NukeGameState(){
 
 	ck_localGameState.music_enabled = true;
 	ck_localGameState.sound_enabled = true;
-	ck_localGameState.map_renderer = 0; // Use default old renderer
+	ck_localGameState.map_renderer = 1; // Use default fast
 
-	ck_localGameState.music_enabled = false; // HACKED: To stop the music from making me go insane
+//	ck_localGameState.music_enabled = false; // HACKED: To stop the music from making me go insane
 
 };
 
@@ -289,7 +289,7 @@ void LK_Init(void){
 	int  i;
 
 	GBA_InitAudio();
-	GBA_InitSerial(GBA_COM_BAUD_9600);
+	GBA_InitSerial(GBA_COM_BAUD_115200);
 
 	LK_CA_SetupGraphics();
 	LK_IntroDemo();
@@ -432,11 +432,9 @@ const int LK_VRBs = 3;
 void LK_DoGameLoop(void){
 	int i, updateGame = 0;
 	// Changed to relitive because it was causing problems with multiplayer
-	if(ck_localGameState.multiplayerGame){
-		nextVSync = LK_VRBs; 
-	}else{
-		nextVSync = GBA_VSyncCounter+LK_VRBs;
-	}
+
+	nextVSync = GBA_VSyncCounter+LK_VRBs;
+
 	updateGame = 1;
 	while(1){
 		
