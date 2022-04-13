@@ -29,7 +29,7 @@ To play multiplayer, you need a link cable.
 Player 1 (aka the gameboy connected to the purple connecter) MUST start the match.
 You can set the number of players in the Game Settings menu, but it will automatically be set to the detected number of GBAs connected*.
 
-* This might not work correctly in Multiboot mode. Go into the Game Settings menu to set the number of players.
+* If this does not work correctly, go into the Game Settings menu to set the number of players.
 
 If you see an error message such as:
 Link Error
@@ -41,7 +41,7 @@ Checkout the code I ripped from them: https://github.com/felixjones/agbabi/tree/
 
 To send the ROM over, select the Send Game option on the Main Menu.
 Wait for the transfer to complete. If it fails, restart the other gameboy, and try again.
-Once the transfer is done, select Reconnect on both gameboys (Select the menu on Player 1's GBA first). 
+Once the transfer is done, select Reconnect on both gameboys. 
 
 To save space, all characters have been replaced with a palette swaped version of keen.
 
