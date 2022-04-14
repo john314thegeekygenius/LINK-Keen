@@ -41,7 +41,7 @@ build:
 	arm-none-eabi-objcopy -v -O binary a.out $(GB_GBA)
 	gbafix $(GB_GBA) -t LINK-KEEN
 build_multiboot:
-	arm-none-eabi-gcc -DLK_MULTIBOOT_ROM=0 crt0.s $(GB_SRC) -mcpu=arm7tdmi -nostartfiles -Tlnkscript
+	arm-none-eabi-gcc -DLK_MULTIBOOT_ROM=0 crt0.s $(GB_SRC) -Os -mcpu=arm7tdmi -nostartfiles -Tlnkscript
 	#mv a.out $(GB_GBA)
 	arm-none-eabi-objcopy -v -O binary a.out $(GB_GBABOOT)
 	gbafix $(GB_GBABOOT) -t BOOT-KEEN
