@@ -32,25 +32,25 @@ uint32_t GBA_Rand(){
 };
 
 // Copy data using DMA 
-void GBA_DMA_Copy16(uint16_t* dest, uint16_t* source, int amount) {
+void __attribute__((optimize("O0"))) GBA_DMA_Copy16(uint16_t* dest, uint16_t* source, int amount) {
     *(volatile unsigned int*)GBA_DMA_SRC   = (unsigned int) source;
     *(volatile unsigned int*)GBA_DMA_DEST  = (unsigned int) dest;
     *(volatile unsigned int*)GBA_DMA_COUNT = amount | GBA_DMA_16 | GBA_DMA_ENABLE;
 };
 
-void GBA_DMA_Copy32(uint32_t* dest, uint32_t* source, int amount) {
+void __attribute__((optimize("O0"))) GBA_DMA_Copy32(uint32_t* dest, uint32_t* source, int amount) {
     *(volatile unsigned int*)GBA_DMA_SRC   = (unsigned int) source;
     *(volatile unsigned int*)GBA_DMA_DEST  = (unsigned int) dest;
     *(volatile unsigned int*)GBA_DMA_COUNT = amount | GBA_DMA_32 | GBA_DMA_ENABLE;
 };
 
-void GBA_DMA_MemSet16(uint16_t* dest, uint16_t val, int len){
+void __attribute__((optimize("O0"))) GBA_DMA_MemSet16(uint16_t* dest, uint16_t val, int len){
     *(volatile unsigned int*)GBA_DMA_SRC   = (unsigned int) &val;
     *(volatile unsigned int*)GBA_DMA_DEST  = (unsigned int) dest;
     *(volatile unsigned int*)GBA_DMA_COUNT = len | GBA_DMA_16 | GBA_DMA_SRC_FIXED | GBA_DMA_ENABLE;
 };
 
-void GBA_DMA_MemSet32(uint32_t* dest, uint32_t val, int len){
+void __attribute__((optimize("O0"))) GBA_DMA_MemSet32(uint32_t* dest, uint32_t val, int len){
     *(volatile unsigned int*)GBA_DMA_SRC   = (unsigned int) &val;
     *(volatile unsigned int*)GBA_DMA_DEST  = (unsigned int) dest;
     *(volatile unsigned int*)GBA_DMA_COUNT = len | GBA_DMA_32 | GBA_DMA_SRC_FIXED | GBA_DMA_ENABLE;

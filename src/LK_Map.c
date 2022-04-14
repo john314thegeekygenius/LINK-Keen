@@ -13,6 +13,7 @@
 // Local map
 uint16_t ck_levelbuff[MAX_LEVEL_WIDTH*MAX_LEVEL_HEIGHT*2];
 uint16_t ck_map_animations[MAX_LEVEL_ANIMATIONS*2];
+uint16_t ck_num_animations = 0;
 
 uint16_t * ck_level_data;
 uint16_t ck_level_width = 32;
@@ -26,6 +27,13 @@ boolean ck_mapneeds_updated = false;
 boolean ck_mapneeds_updated2 = false;
 
 // Camera stuffs
+
+
+const short CK_CAM_SPEED = 4;
+int ck_mapposx = 0;
+int ck_mapposy = 0;
+int ck_mapbuffer = 0;
+
 
 short ck_cam_minx = 16; // Start with not allowing border
 short ck_cam_miny = 16; // Start with not allowing border
@@ -41,8 +49,42 @@ void LK_MP_SetTile(uint16_t x, uint16_t y, uint16_t tile, uint16_t plane){
 		return;
 	ck_levelbuff[(y*ck_level_width)+x+(ck_level_size*plane)] = tile;
 	// Yes?
-	ck_mapneeds_updated = true;
-	ck_mapneeds_updated2 = true;
+//	ck_mapneeds_updated = true;
+//	ck_mapneeds_updated2 = true;
+
+	if(ck_localGameState.map_renderer==0){
+		if(x>=0&&x<32&&y>=0&&y<32){
+			x += (ck_mapbuffer<<5);
+#ifdef LK_4BPP_MAPS
+			if(plane == 0){
+				*(uint16_t*)(GBA_BG0_Map+(y<<5)+x) = tile;
+			}
+			if(plane == 1){
+				*(uint16_t*)(GBA_BG1_Map+(y<<5)+x) = tile+0x100;
+				if(((*ck_tileinfo)[256+(tile*3)+1]&0x8000))
+					*(uint16_t*)(GBA_BG2_Map+(y<<5)+x) = tile+0x100;
+			}
+#endif
+		}
+
+	}
+	else if(ck_localGameState.map_renderer==1){
+#ifdef LK_4BPP_MAPS
+		if(x>=0&&x<64&&y>=0&&y<64){
+			if(x>=32) x += 992;
+			if(y>=32) y += 32;
+
+			if(plane == 0){
+				*(uint16_t*)(GBA_BG0_Map+(y<<5)+x) = tile;
+			}
+			if(plane == 1){
+				*(uint16_t*)(GBA_BG1_Map+(y<<5)+x) = tile+0x100;
+				if(((*ck_tileinfo)[256+(tile*3)+1]&0x8000))
+					*(uint16_t*)(GBA_BG2_Map+(y<<5)+x) = tile+0x100;
+			}
+#endif
+		}
+	}
 };
 
 uint16_t LK_MP_GetTile(uint16_t x, uint16_t y, uint16_t plane){
@@ -74,6 +116,7 @@ void LK_MP_LoadMap(uint16_t mapid){
 
 	GBA_DMA_MemSet16(ck_map_animations,0,MAX_LEVEL_ANIMATIONS*2);
 
+	ck_num_animations = 0;
 
 	// Copy the map into the buffer
 	animationID = 0;
@@ -170,14 +213,19 @@ void LK_MP_LoadMap(uint16_t mapid){
 			ck_map_animations[(animationID<<1)] = i;
 			ck_map_animations[(animationID<<1)+1] = 0; // set time to 0
 			animationID ++;
+			ck_num_animations ++;
 		}
 		// Add foreground animations
 		if((*ck_tileinfo)[256+(ck_levelbuff[i+ck_level_size]*3)+2]>>9){
 			ck_map_animations[(animationID<<1)] = i;
 			ck_map_animations[(animationID<<1)+1] = 0x8000; // set time to 0
 			animationID ++;
+			ck_num_animations ++;
 		}
-		if(animationID>=MAX_LEVEL_ANIMATIONS) animationID = 0; // Uhhh :o
+		if(animationID>=MAX_LEVEL_ANIMATIONS) {
+			animationID = 0; // Uhhh :o
+			ck_num_animations = MAX_LEVEL_ANIMATIONS;
+		}
 	}
 	
 	// Add players if they never spawned! :(
@@ -346,11 +394,6 @@ void LK_MP_LoadMap(uint16_t mapid){
 };
 
 
-const short CK_CAM_SPEED = 4;
-int ck_mapposx = 0;
-int ck_mapposy = 0;
-int ck_mapbuffer = 0;
-
 
 void LK_MP_UpdateCamera(){
 
@@ -371,6 +414,9 @@ void LK_MP_UpdateCamera(){
 
 	if(globalCK_Y > (16<<3)+ck_cam_y){
 		ck_cam_y += 8;
+		if(globalCK_Y > 16+(16<<3)+ck_cam_y){
+			ck_cam_y += 16;
+		}
 //		ck_mapneeds_updated = true;
 //		ck_mapdir |= 4;
 	}
@@ -483,7 +529,7 @@ void LK_MP_UpdateMap(){
 	uint16_t tv, vy;
 	int tx, ty;
 	
-	for(i = 0; i < MAX_LEVEL_ANIMATIONS; i++){
+	for(i = 0; i < ck_num_animations; i++){
 		tileoff = ck_map_animations[(i<<1)];
 		//if(tileoff == 0) return; // Don't do the rest?
 		tv = ck_map_animations[(i<<1)+1];
@@ -493,7 +539,10 @@ void LK_MP_UpdateMap(){
 				ty = vy-(ck_cam_y>>3);
 				tx = (tileoff - (vy*ck_level_width)) - (ck_cam_x>>3);
 			}else if(ck_localGameState.map_renderer==1){
-				ty = vy- ((ck_cam_y>>8)<<5);
+				ty = vy;
+				if(ck_level_height>64){
+					ty -= ((ck_cam_y>>8)<<5);
+				}
 				tx = (tileoff - (vy*ck_level_width)) - ((ck_cam_x>>8)<<5);
 			}
 			tv -= 0x8000;
@@ -508,7 +557,10 @@ void LK_MP_UpdateMap(){
 				ty = vy-(ck_cam_y>>3);
 				tx = (tileoff - (vy*ck_level_width)) - (ck_cam_x>>3);
 			}else if(ck_localGameState.map_renderer==1){
-				ty = vy- ((ck_cam_y>>8)<<5);
+				ty = vy;
+				if(ck_level_height>64){
+					ty -= ((ck_cam_y>>8)<<5);
+				}
 				tx = (tileoff - (vy*ck_level_width)) - ((ck_cam_x>>8)<<5);
 			}
 			tile = (ck_levelbuff[tileoff]);

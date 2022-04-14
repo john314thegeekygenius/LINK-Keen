@@ -1481,62 +1481,26 @@ void LK_MapCollideKeen(ck_object *obj){
 						obj->ck_frame = &ck_KeenSwitch;
 						LK_SD_PlaySound(CK_SND_CLICK);
 						
-						int bridge_end = 0;
-						uint16_t tileTI3 = (((*ck_tileinfo)[256+(tile*3)+1])>>7)&0xFF;
-
+						// Flip the switch
+						uint16_t tileTI3 = ((*ck_tileinfo)[256+(tile*3)+2])&0x1FF;
 						LK_MP_SetTile(TIclipX,TIclipY,tileTI3,1);
+						
+						// Update the tile info
 						if(tileTI2&0x8000){
 							int i;
+							int bridge_end = 0;
 							uint16_t lx = (tileTI2&0x7F);
 							uint16_t ly = ((tileTI2>>7)&0x7F);
-							
-							for(bridge_end = lx; bridge_end < lx+64; bridge_end++){
-								tile = LK_MP_GetTile(bridge_end,ly,1);
-								if(tile == 0xA2 || tile == 0xA6){
-									goto skip_bridge;
+							for(bridge_end = 0; bridge_end < 32; bridge_end++){
+								for(i = 0; i < 2; i++){
+									uint16_t brtile = LK_MP_GetTile(lx+bridge_end,ly-i,1);
+									uint16_t brinfo = ((*ck_tileinfo)[256+(brtile*3)+2]);
+									if(!(brinfo&0x1FF))
+										goto endbridge;
+									LK_MP_SetTile(lx+bridge_end,ly-i,brinfo&0x1FF,1);
 								}
 							}
-							skip_bridge:
-							// Change the tiles
-							tile = (ck_levelbuff[(ly*ck_level_width)+lx + ck_level_size]);
-							if(tile == 0xA0){
-								LK_MP_SetTile(lx,ly,tile+4,1);
-								tile = (ck_levelbuff[(ly*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly,tile+4,1);
-								tile = (ck_levelbuff[((ly-1)*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly-1,tile+4,1);
-								for(i = lx+2; i <= bridge_end; i++){
-									if(i<bridge_end)
-										LK_MP_SetTile(i,ly,0x92,1);
-									LK_MP_SetTile(i,ly-1,0x96,1);
-								}
-								lx = bridge_end;
-								tile = (ck_levelbuff[(ly*ck_level_width)+lx + ck_level_size]);
-								LK_MP_SetTile(lx,ly,tile+4,1);
-								tile = (ck_levelbuff[(ly*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly,tile+4,1);
-								tile = (ck_levelbuff[((ly-1)*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly-1,tile+4,1);
-
-							}else if(tile == 0xA4){
-								LK_MP_SetTile(lx,ly,tile-4,1);
-								tile = (ck_levelbuff[(ly*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly,tile-4,1);
-								tile = (ck_levelbuff[((ly-1)*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly-1,tile-4,1);
-								for(i = lx+2; i <= bridge_end; i++){
-									if(i<bridge_end)
-										LK_MP_SetTile(i,ly,0x00,1);
-									LK_MP_SetTile(i,ly-1,0x00,1);
-								}
-								lx = bridge_end;
-								tile = (ck_levelbuff[(ly*ck_level_width)+lx + ck_level_size]);
-								LK_MP_SetTile(lx,ly,tile-4,1);
-								tile = (ck_levelbuff[(ly*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly,tile-4,1);
-								tile = (ck_levelbuff[((ly-1)*ck_level_width)+lx+1 + ck_level_size]);
-								LK_MP_SetTile(lx+1,ly-1,tile-4,1);
-							}
+							endbridge:;
 						}
 					}
 				}
