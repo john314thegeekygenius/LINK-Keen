@@ -1,0 +1,26 @@
+ck5_tileset0_size 24576
+ck5_tileset1_size 24576
+ck5_tileinfo_0_size 2048
+ck5_tileinfo_1_size 2048
+map_0_size 1632
+map_1_size 3264
+map_2_size 5760
+map_3_size 7200
+map_4_size 2808
+
+ck5_sprites_size 6144
+keen_sheet_size 9024
+
+cwrist_font_size 6720
+cwrist_map_size 2048
+cwrist_tiles_size 10560
+
+----------------------------------
+Total:    108408 bytes
+
+========================================
+
+Map buffer 14400
+Map Animation buffer 256
+
+
