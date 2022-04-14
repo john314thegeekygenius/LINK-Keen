@@ -1,33 +1,36 @@
 
 
 #include "ck5_tileset0_info.h"
-#ifdef LK_MULTIBOOT_ROM
+#ifdef LK_4BPP_MAPS
 #include "ck5_tileset04b.h"
 #include "ck5_tileset14b.h"
 #else
 #include "ck5_tileset0.h"
 #include "ck5_tileset1.h"
 #endif
+
 #include "ck_map0.h"
 #include "ck_map1.h"
 #include "ck_map2.h"
+#include "ck_map3.h"
 
 
 // Define music ids
 const uint16_t ck_map0_music = 0;
 const uint16_t ck_map1_music = 1;
 const uint16_t ck_map2_music = 2;
+const uint16_t ck_map3_music = 3;
 
 
 // Define map info
 const char *ck_map0_info[] = {
-	"Test map 0",
+	"Trash Recovery",
 	"By John314",
 	"30 x 20"
 };
 
 const char *ck_map1_info[] = {
-	"Test map 1",
+	"Shikadi Hall",
 	"By John314",
 	"64 x 20"
 };
@@ -38,10 +41,17 @@ const char *ck_map2_info[] = {
 	"64 x 45"
 };
 
+const char *ck_map3_info[] = {
+	"Korath Towers",
+	"By Mink",
+	"60 x 60"
+};
+
 const uint16_t *ck_levels_data[] = {
 	&ck_map0_data,
 	&ck_map1_data,
 	&ck_map2_data,
+	&ck_map3_data,
 	(uint16_t*)NULL,
 	(uint16_t*)NULL,
 	(uint16_t*)NULL,
@@ -54,6 +64,7 @@ const unsigned char ** ck_levels_tileset[] = {
 	&ck_map0_tileset,
 	&ck_map1_tileset,
 	&ck_map2_tileset,
+	&ck_map3_tileset,
 	0,
 	0,
 	0,
@@ -65,6 +76,7 @@ const unsigned char ** ck_levels_tileset[] = {
 };
 
 const uint16_t *ck_levels_tileinfo[] = {
+	&ck5_tileset0_tileinfo,
 	&ck5_tileset0_tileinfo,
 	&ck5_tileset0_tileinfo,
 	&ck5_tileset0_tileinfo,
@@ -80,6 +92,7 @@ const uint16_t ck_levels_width[] = {
 	ck_map0_width,
 	ck_map1_width,
 	ck_map2_width,
+	ck_map3_width,
 	0,
 	0,
 	0,
@@ -93,6 +106,7 @@ const uint16_t ck_levels_height[] = {
 	ck_map0_height,
 	ck_map1_height,
 	ck_map2_height,
+	ck_map3_height,
 	0,
 	0,
 	0,
@@ -106,6 +120,7 @@ const char ** ck_levels_info[] = {
 	&ck_map0_info,
 	&ck_map1_info,
 	&ck_map2_info,
+	&ck_map3_info,
 	(uint16_t*)NULL,
 	(uint16_t*)NULL,
 	(uint16_t*)NULL,
@@ -118,6 +133,7 @@ const uint16_t ck_levels_music[] = {
 	ck_map0_music,
 	ck_map1_music,
 	ck_map2_music,
+	ck_map3_music,
 	(uint16_t*)NULL,
 	(uint16_t*)NULL,
 	(uint16_t*)NULL,

@@ -2988,6 +2988,24 @@ void LK_UpdateObjects(void){
 			// Update the object
 			obj->ck_update_obj(obj);
 			
+			if(obj->type==ck_objPlayer){
+				for(e = 0; e <= ck_NumOfObjects; e++){
+					// Don't collide with its self!
+					if(i==e) continue; 
+					obj2 = &CK_ObjectList[e];
+
+					// Swap objects and collide
+					if(LK_ObjInObj(obj,obj2))
+						obj2->ck_collide_obj(obj2,obj);
+				}
+			}
+			// TODO:
+			// Make this happen for other objects?
+/*	ck_objShot,
+	ck_objEnemyShot,
+	ck_objBomb,
+	ck_objKill,
+
 			for(e = 0; e <= ck_NumOfObjects; e++){
 				// Don't collide with its self!
 				if(i==e) continue; 
@@ -2995,6 +3013,7 @@ void LK_UpdateObjects(void){
 				if(LK_ObjInObj(obj,obj2))
 					obj->ck_collide_obj(obj,obj2);
 			}
+			* */
 		}else{
 			// Render that sprite offscreen
 			if(obj->pos_x != 0xF0){

@@ -11,7 +11,7 @@
 #define MAX_LEVEL_ANIMATIONS 64
 
 // Max of 64 levels
-#define CK_MAX_LEVELS 2
+#define CK_MAX_LEVELS 3
 
 extern uint16_t * ck_level_data;
 extern unsigned short ck_level_width;

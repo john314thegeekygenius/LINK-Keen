@@ -15,6 +15,7 @@
 #include "CK_Audio/ck_music_0.h"
 #include "CK_Audio/ck_music_1.h"
 #include "CK_Audio/ck_music_2.h"
+#include "CK_Audio/ck_music_3.h"
 #endif
 
 #ifdef LK_SOUND_ENABLED
@@ -49,12 +50,13 @@
 const GBA_SoundSample CK_Music_0 = { &ck_music_0 , ck_music_0_bytes, GBA_INV_11025, GBA_SAMP_RATE_11025 };
 const GBA_SoundSample CK_Music_1 = { &ck_music_1 , ck_music_1_bytes, GBA_INV_11025, GBA_SAMP_RATE_11025 };
 const GBA_SoundSample CK_Music_2 = { &ck_music_2 , ck_music_2_bytes, GBA_INV_11025, GBA_SAMP_RATE_11025 };
+const GBA_SoundSample CK_Music_3 = { &ck_music_3 , ck_music_3_bytes, GBA_INV_11025, GBA_SAMP_RATE_11025 };
 
 const GBA_SoundSample *CK_Music[] = {
 	&CK_Music_0,
 	&CK_Music_1,
 	&CK_Music_2,
-	&CK_Music_0,
+	&CK_Music_3,
 	&CK_Music_0,
 };
 #endif
