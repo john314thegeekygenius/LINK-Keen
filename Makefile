@@ -28,7 +28,7 @@ GB_SRC = src/LK_Main.c src/LK_Game.c src/LK_Object.c src/LK_Map.c src/LK_Levels.
 GB_GBA = out/LKEEN.gba
 GB_GBABOOT = out/BKEEN.gba
 
-GB_MUS_O = ck_music_0.o ck_music_1.o ck_music_2.o
+GB_MUS_O = ck_music_0.o ck_music_1.o ck_music_2.o ck_music_3.o
 GB_SND_O = ck_snd_0.o ck_snd_1.o ck_snd_2.o ck_snd_3.o ck_snd_4.o ck_snd_5.o ck_snd_6.o ck_snd_7.o \
 			ck_snd_8.o ck_snd_9.o ck_snd_10.o ck_snd_11.o ck_snd_12.o ck_snd_13.o ck_snd_14.o ck_snd_15.o \
 			ck_snd_16.o ck_snd_17.o ck_snd_18.o ck_snd_19.o ck_snd_20.o
@@ -72,6 +72,7 @@ music:
 	arm-none-eabi-gcc -c src/CK_Audio/ck_music_0.c -mcpu=arm7tdmi -nostartfiles
 	arm-none-eabi-gcc -c src/CK_Audio/ck_music_1.c -mcpu=arm7tdmi -nostartfiles
 	arm-none-eabi-gcc -c src/CK_Audio/ck_music_2.c -mcpu=arm7tdmi -nostartfiles
+	arm-none-eabi-gcc -c src/CK_Audio/ck_music_3.c -mcpu=arm7tdmi -nostartfiles
 
 all: music sound build
 
