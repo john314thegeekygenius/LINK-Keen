@@ -40,6 +40,8 @@ boolean LK_NT_InitMatch(){
 
 	// Fix image
 	ck_localGameState.player_pics[GBA_SerialID] = ck_localGameState.player_pics[0];
+	// Fix team
+	ck_localGameState.player_teams[GBA_SerialID] = ck_localGameState.player_teams[0];
 
 	// Get the number of GBAs needed to connect
 	if(GBA_SerialID!=0){
@@ -273,6 +275,42 @@ boolean LK_NT_InitMatch(){
 			if(connectedPlayers[i] == 0)
 				canbreak = false;
 	}
+	canbreak = false;
+	while(canbreak==false){
+		// Send data
+		GBA_Serial_SendWord(CK_DATA2_PACKET | 
+			((ck_localGameState.teamGame&0x1)) |
+			((ck_localGameState.hazard_penalty&0x1)<<1) |
+			((ck_localGameState.player_teams[GBA_SerialID]&0x7)<<2)
+			);
+//			((ck_localGameState.start_bombs&0xF)<<4) |
+
+		// Collect information
+		GBA_UpdateSerial();
+
+		for(i=0;i<ck_localGameState.num_players;i++){
+			if((GBA_SerialData[i]&0xF000) == CK_DATA2_PACKET){
+				connectedPlayers[i] = 1;
+				ck_localGameState.player_teams[i] = (GBA_SerialData[i]&0x7)>>2;
+				if(i==0){
+					ck_localGameState.teamGame = (GBA_SerialData[i]&0x1);
+					ck_localGameState.hazard_penalty = (GBA_SerialData[i]&0x2)>>1;
+				}
+			}else if(GBA_SerialData[i] == CK_HANDSHAKE_PACKET){
+				// That GBA is lagging behind
+			}else{
+				int d = GBA_SerialData[i];
+				LK_US_ThrowError("Bad Packet");
+				LK_US_ThrowError(LK_US_Htoa16(d));
+				return true;
+			}
+		}
+		canbreak = true;
+		for(i=0;i<ck_localGameState.num_players;i++)
+			if(connectedPlayers[i] == 0)
+				canbreak = false;
+	}
+	
 	return false;
 };
 

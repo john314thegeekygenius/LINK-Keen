@@ -32,7 +32,7 @@ ck_animation ck_BombRemove;
 void LK_PhysCollideObj(ck_object *obj,ck_object *obj_hit){
 	if(obj->type==ck_objShot && obj_hit->type==ck_objPlayer){
 		if(ck_localGameState.ck_health[obj_hit->var4]>0){
-			if(obj->var4 != obj_hit->var4){
+			if((obj->var4 != obj_hit->var4) && (obj->teamid != obj_hit->teamid)){
 				if(obj->accel_x != 0 || obj->accel_y != 0){
 					if(obj_hit->var1==0){
 						// Hurt the player
@@ -52,7 +52,7 @@ void LK_PhysCollideObj(ck_object *obj,ck_object *obj_hit){
 
 	if(obj->type==ck_objBomb && obj_hit->type==ck_objPlayer){
 		if(ck_localGameState.ck_health[obj_hit->var4]>0){
-			if(obj->var4 != obj_hit->var4){
+			if((obj->var4 != obj_hit->var4) && (obj->teamid != obj_hit->teamid)){
 				if(obj->state == ck_objKill){
 					if(obj_hit->var1==0){
 						// Hurt the player
@@ -530,6 +530,7 @@ void LK_SpawnBomb(int x,int y, int dir_x, int dir_y, ck_object * keenobj){
 	obj->var1 = 0; // bomb timer
 	obj->var2 = 0; // should bomb explode
 	obj->var4 = keenobj->var4; // obj id
+	obj->teamid = keenobj->teamid; // obj team id
 
 	obj->clip_rects.clipX = 2;
 	obj->clip_rects.clipY = 2;
@@ -832,7 +833,7 @@ void LK_LogicShot(ck_object *obj){
 	}
 };
 
-void LK_SpawnShot(int x,int y, int dir_x, int dir_y, int obj_id){
+void LK_SpawnShot(int x,int y, int dir_x, int dir_y, int obj_id, int team_id){
 	ck_object * obj = LK_GetNewObj(0);
 
 	obj->pos_x = x;
@@ -849,6 +850,7 @@ void LK_SpawnShot(int x,int y, int dir_x, int dir_y, int obj_id){
 	
 	obj->var1 = 0; // shot timer
 	obj->var4 = obj_id; // obj id
+	obj->teamid = team_id; // obj team id
 
 	obj->clip_rects.clipX = 2;
 	obj->clip_rects.clipY = 2;
@@ -1921,7 +1923,8 @@ void LK_MurderKeen(ck_object *obj){
 //	if(obj->var1) return; // We invincable!
 	if(obj->state != ck_objDead){
 		obj->state = ck_objDead;
-		ck_localGameState.ck_lives[obj->var4] -= 1;
+		if(ck_localGameState.hazard_penalty)
+			ck_localGameState.ck_lives[obj->var4] -= 1;
 		obj->var2 = 0x20;
 		obj->animation_tick = 0;
 		obj->ck_frame = &ck_KeenDie;
@@ -2138,7 +2141,7 @@ void LK_LogicKeen(ck_object *obj){
 				if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
 
 					if(ck_localGameState.ck_shots[obj->var4]){
-						LK_SpawnShot(obj->pos_x,obj->pos_y-8,CK_Dir_None,CK_Dir_Up,obj->var4);
+						LK_SpawnShot(obj->pos_x,obj->pos_y-8,CK_Dir_None,CK_Dir_Up,obj->var4,obj->teamid);
 						hasShot = 1;
 					}
 
@@ -2148,7 +2151,7 @@ void LK_LogicKeen(ck_object *obj){
 				}else
 				if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_DOWN){
 					if(ck_localGameState.ck_shots[obj->var4]){
-						LK_SpawnShot(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4);
+						LK_SpawnShot(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4,obj->teamid);
 						hasShot = true;
 					}
 					obj->animation_tick = 0;
@@ -2162,10 +2165,10 @@ void LK_LogicKeen(ck_object *obj){
 					if(ck_localGameState.ck_shots[obj->var4]){
 
 						if(obj->dir_x == CK_Dir_Left){
-							LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+							LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4,obj->teamid);
 						}
 						if(obj->dir_x == CK_Dir_Right){
-							LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+							LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4,obj->teamid);
 						}
 						hasShot = true;
 					}
@@ -2534,7 +2537,7 @@ void LK_LogicKeen(ck_object *obj){
 			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_UP){
 
 				if(ck_localGameState.ck_shots[obj->var4]){
-					LK_SpawnShot(obj->pos_x,obj->pos_y-8,CK_Dir_None,CK_Dir_Up,obj->var4);
+					LK_SpawnShot(obj->pos_x,obj->pos_y-8,CK_Dir_None,CK_Dir_Up,obj->var4,obj->teamid);
 					hasShot = 1;
 				}
 				if(ck_localGameState.on_ground[obj->var4] && ck_localGameState.is_pogoing[obj->var4]==false){
@@ -2551,7 +2554,7 @@ void LK_LogicKeen(ck_object *obj){
 			if(ck_localGameState.ck_keeninputs[obj->var4] & GBA_BUTTON_DOWN){
 				if(!ck_localGameState.on_ground[obj->var4]){
 					if(ck_localGameState.ck_shots[obj->var4]){
-						LK_SpawnShot(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4);
+						LK_SpawnShot(obj->pos_x,obj->pos_y+16,CK_Dir_None,CK_Dir_Down,obj->var4,obj->teamid);
 						hasShot = true;
 					}
 					obj->animation_tick = 0;
@@ -2567,10 +2570,10 @@ void LK_LogicKeen(ck_object *obj){
 					if(ck_localGameState.ck_shots[obj->var4]){
 
 						if(obj->dir_x == CK_Dir_Left){
-							LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+							LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4,obj->teamid);
 						}
 						if(obj->dir_x == CK_Dir_Right){
-							LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+							LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4,obj->teamid);
 						}
 						hasShot = true;
 					}
@@ -2583,10 +2586,10 @@ void LK_LogicKeen(ck_object *obj){
 						obj->ck_frame = &ck_KeenJumpShoot;
 						if(ck_localGameState.ck_shots[obj->var4]){
 							if(obj->dir_x == CK_Dir_Left){
-								LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+								LK_SpawnShot(obj->pos_x-8,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4,obj->teamid);
 							}
 							if(obj->dir_x == CK_Dir_Right){
-								LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4);
+								LK_SpawnShot(obj->pos_x+16,obj->pos_y,obj->dir_x,CK_Dir_None,obj->var4,obj->teamid);
 							}
 							hasShot = true;
 						}
@@ -2808,6 +2811,12 @@ void LK_SpawnKeen(int x,int y, unsigned short player_id){
 	obj->var3 = 0; // Climb counter
 	obj->var4 = player_id;
 
+	// Team id
+	if(ck_localGameState.teamGame){
+		obj->teamid = ck_localGameState.player_teams[player_id];
+	}else{
+		obj->teamid = player_id; // All different
+	}
 	obj->trying_to_move = 0;
 	obj->interacting = 0;
 

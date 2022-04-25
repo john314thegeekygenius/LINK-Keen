@@ -78,6 +78,8 @@ typedef struct ck_object {
 	short var3;
 	short var4;
 
+	short teamid; // what team is the object connected to
+
 	int int1; // variables for random things
 	int int2;
 

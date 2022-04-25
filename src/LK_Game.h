@@ -14,6 +14,8 @@ typedef struct ck_gameState {
 	unsigned short start_health; // How much health do you start with
 	unsigned short end_score; // What score wins a match 
 	unsigned short end_kills; // How many kills wins a match
+	boolean hazard_penalty; // Do hazards take away kills
+	unsigned char player_teams[4]; // what team are the players on
 	
 	// Game state stuff
 	boolean in_game; // Is the player in a game
@@ -21,6 +23,7 @@ typedef struct ck_gameState {
 	boolean multiplayerAvailable; // Is another GBA connected
 	boolean multibootAvailable; // Is multiboot available
 	boolean multiplayerGame; // Is the current match a multiplayer one
+	boolean teamGame; // Is this a team game
 	short num_players; // How many players are gona play
 	unsigned short player_ips[4]; // IP of players
 	boolean player_connected[4]; // Is the player still connected

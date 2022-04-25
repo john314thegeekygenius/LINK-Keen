@@ -156,6 +156,7 @@ void LK_EndMatch(){
 	if(ck_localGameState.multiplayerGame){
 		// Copy some settings back over
 		ck_localGameState.player_pics[0] = ck_localGameState.player_pics[GBA_SerialID];
+		ck_localGameState.player_teams[0] = ck_localGameState.player_teams[GBA_SerialID];
 	}
 	LK_US_ResetROM();
 
@@ -257,11 +258,19 @@ void LK_ResetGameState(){
 };
 
 void LK_NukeGameState(){
+	int i;
 	ck_localGameState.level_id = 0;
 	ck_localGameState.player_id = 0;
 	ck_localGameState.player_pics[0] = 0;
+	ck_localGameState.player_teams[0] = 0;
 	ck_localGameState.multiplayerAvailable = false;
 	ck_localGameState.num_players = 2; // default 2
+	
+	for(i = 0; i < 4; i++){
+		ck_localGameState.player_teams[i] = 0;
+	}
+	ck_localGameState.teamGame = 0; // No
+	ck_localGameState.hazard_penalty = 1; // Yes
 
 	ck_localGameState.start_shots = 5;
 	ck_localGameState.start_bombs = 0;
@@ -301,6 +310,9 @@ void LK_Init(void){
 	LK_CA_CopySpriteSheet();
 	
 	ck_localGameState.num_players = GBA_NGameBoysConnected;
+	for(i = 0; i < 4; i++){
+		ck_localGameState.player_teams[i] = 0;
+	}
 };
 
 void LK_InitGame(boolean singleplayer){

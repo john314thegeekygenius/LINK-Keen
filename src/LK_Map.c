@@ -703,8 +703,16 @@ void LK_MP_RenderMap(){
 		if(ck_mapneeds_updated2){
 			ck_mapneeds_updated2 = false;
 
-			lvlx = ck_cam_x>>8;
-			lvly = ck_cam_y>>8;
+			if(ck_level_width>66){
+				lvlx = (ck_cam_x>>8);
+			}else{
+				lvlx = 0;
+			}
+			if(ck_level_height>66){
+				lvly = (ck_cam_y>>8);
+			}else{
+				lvly = 0;
+			}
 			
 			leveloff = ck_level_width-64;
 

@@ -25,7 +25,7 @@
 
 char* ck_SNewGame[] = {"Start Solo","Start Multi","Character","Map","Game Settings"};
 char* ck_SOptions[] = {"Music","Sound","Controls","Graphics","Link Settings"};
-char* ck_SGame[]    = {"Num Players","Num Bombs","Num Shots","Num Lives"};
+char* ck_SGame[]    = {"Players","Bombs","Shots","Lives","Teams"};
 #ifdef LK_MULTIBOOT_ROM
 char* ck_SMainMenu[] = {"New Game","Options","Reconnect"};
 #else
@@ -36,12 +36,12 @@ char* ck_SGraphics[] = {"Map Renderer","Scorebox"};
 
 char ck_BNewGame[] = {1,0,1,1,1};
 char ck_BOptions[] = {1,1,1,1,1};
-char ck_BGame[] = {1,1,1,1};
+char ck_BGame[] = {1,1,1,1,1};
 char ck_BMainMenu[] = {1,1,1,0};
 char ck_BGraphics[] = {1,1};
 
 ck_Folder ck_FMainMenu,ck_FNewGame,ck_FOptions,ck_FSettings,ck_FReconnect,ck_FSendGame,
-			ck_FNPlayers, ck_FNBombs, ck_FNShots, ck_FNLives, ck_FGraphics;
+			ck_FNPlayers, ck_FNBombs, ck_FNShots, ck_FLives, ck_FTeams, ck_FGraphics;
 
 //////// New Game
 ck_Folder ck_FSoloGame  = {ck_CSoloGame, NULL,  NULL,  0, &ck_FNewGame,
@@ -55,14 +55,16 @@ ck_Folder ck_FMap  = {ck_CMap, NULL,  NULL,  0, &ck_FNewGame,
 
 //////// Game Settings
 ck_Folder ck_FSettings  = {ck_CSettings, &ck_BGame,  &ck_SGame,  4, &ck_FNewGame,
-	{&ck_FNPlayers, &ck_FNBombs, &ck_FNShots, &ck_FNLives, NULL}};
+	{&ck_FNPlayers, &ck_FNBombs, &ck_FNShots, &ck_FLives, &ck_FTeams, NULL}};
 ck_Folder ck_FNPlayers  = {ck_CNPlayers, NULL,  NULL,  0, &ck_FSettings,
 	{NULL}};
 ck_Folder ck_FNBombs  = {ck_CNBombs, NULL,  NULL,  0, &ck_FSettings,
 	{NULL}};
 ck_Folder ck_FNShots  = {ck_CNShots, NULL,  NULL,  0, &ck_FSettings,
 	{NULL}};
-ck_Folder ck_FNLives  = {ck_CNLives, NULL,  NULL,  0, &ck_FSettings,
+ck_Folder ck_FLives  = {ck_CLives, NULL,  NULL,  0, &ck_FSettings,
+	{NULL}};
+ck_Folder ck_FTeams  = {ck_CTeams, NULL,  NULL,  0, &ck_FSettings,
 	{NULL}};
 
 
@@ -455,7 +457,8 @@ void LK_US_DrawControlPannel(){
 			case ck_CNPlayers:
 			case ck_CNBombs:
 			case ck_CNShots:
-			case ck_CNLives:
+			case ck_CLives:
+			case ck_CTeams:
 			case ck_CMusic:
 			case ck_CSound:
 			case ck_CControls:
@@ -698,11 +701,13 @@ void LK_US_DrawControlPannel(){
 			US_TextX = 8; US_TextY = 14;
 			LK_US_PrintXYMenu("change value");
 		break;
-		case ck_CNLives:
+		case ck_CLives:
 			// Draw some UI
 			US_TextX = 7; US_TextY = 7;
 			LK_US_PrintGlyph(11);
 			US_TextX = 7; US_TextY = 9;
+			LK_US_PrintGlyph(11);
+			US_TextX = 7; US_TextY = 11;
 			LK_US_PrintGlyph(11);
 			US_TextX = 9; US_TextY = 7;
 			LK_US_PrintXY("Start health");
@@ -712,6 +717,14 @@ void LK_US_DrawControlPannel(){
 			LK_US_PrintXY("Kills to win");
 			US_TextX = 12; US_TextY = 10;
 			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.end_kills));
+			US_TextX = 9; US_TextY = 11;
+			LK_US_PrintXY("Hazard penalty");
+			US_TextX = 12; US_TextY = 12;
+			if(ck_localGameState.hazard_penalty){
+				LK_US_PrintXY("Yes");
+			}else{
+				LK_US_PrintXY("No");
+			}
 
 			// Clear the last position
 			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
@@ -731,8 +744,8 @@ void LK_US_DrawControlPannel(){
 			if(ck_selectorY < 0){
 				ck_selectorY = 0;
 			}
-			if(ck_selectorY >= 1){
-				ck_selectorY = 1;
+			if(ck_selectorY >= 2){
+				ck_selectorY = 2;
 			}
 
 			// Get the old glyph
@@ -785,10 +798,123 @@ void LK_US_DrawControlPannel(){
 				}
 				ck_localGameState.end_kills = ck_selectorX;
 			}
+			if(ck_selectorY == 2){
+				ck_selectorX = ck_localGameState.hazard_penalty;
+
+
+				if(ck_lastInput & GBA_BUTTON_LEFT){
+					ck_selectorX  -= 1;
+					if(ck_selectorX<0) ck_selectorX = 0;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+
+				if(ck_lastInput & GBA_BUTTON_RIGHT){
+					ck_selectorX  += 1;
+					if(ck_selectorX>1) ck_selectorX = 1;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.hazard_penalty = ck_selectorX;
+			}
 			US_TextX = 9; US_TextY = 13;
 			LK_US_PrintXYMenu("Use \1 \3 to");
 			US_TextX = 8; US_TextY = 14;
 			LK_US_PrintXYMenu("change value");
+		break;
+		case ck_CTeams:
+
+			// Draw some UI
+			US_TextX = 7; US_TextY = 7;
+			LK_US_PrintGlyph(11);
+			US_TextX = 7; US_TextY = 9;
+			LK_US_PrintGlyph(11);
+			US_TextX = 9; US_TextY = 7;
+			LK_US_PrintXY("Team Game:");
+			US_TextX = 12; US_TextY = 8;
+			if(!ck_localGameState.teamGame){
+				LK_US_PrintXY("No");
+			}else{
+				LK_US_PrintXY("Yes");
+			}
+			//
+			US_TextX = 9; US_TextY = 9;
+			LK_US_PrintXY("Team number:");
+			US_TextX = 12; US_TextY = 10;
+			LK_US_PrintXY(LK_US_Itoa(ck_localGameState.player_teams[0]+1));
+
+			// Clear the last position
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			LK_US_PrintGlyph(ck_selectorGlyph);
+
+			if((ck_lastInput & GBA_BUTTON_UP) ){
+				ck_selectorY  -= 1;
+				// Clear the flag
+				ck_lastInput = 0;
+			}
+			if((ck_lastInput & GBA_BUTTON_DOWN)){
+				ck_selectorY  += 1;
+				// Clear the flag
+				ck_lastInput = 0;
+			}
+
+			if(ck_selectorY < 0){
+				ck_selectorY = 0;
+			}
+			if(ck_selectorY >= 1){
+				ck_selectorY = 1;
+			}
+
+			// Get the old glyph
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			ck_selectorGlyph = LK_US_GetGlyph();
+
+			// Draw the selector
+			US_TextX = 7; US_TextY = 7+(ck_selectorY<<1);
+			LK_US_PrintGlyph(ck_selectorGlyph+1);
+
+			if(ck_selectorY == 0){
+				ck_selectorX = ck_localGameState.teamGame;
+				if((ck_lastInput & GBA_BUTTON_LEFT)){
+					ck_selectorX  -= 1;
+					if(ck_selectorX<0) ck_selectorX = 0;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				if((ck_lastInput & GBA_BUTTON_RIGHT)){
+					ck_selectorX  += 1;
+					if(ck_selectorX>1) ck_selectorX = 1;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.teamGame = ck_selectorX;
+			}else{
+				ck_selectorX = ck_localGameState.player_teams[0];
+				if((ck_lastInput & GBA_BUTTON_LEFT) ){
+					ck_selectorX  -= 1;
+					if(ck_selectorX<0) ck_selectorX = 0;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				if((ck_lastInput & GBA_BUTTON_RIGHT) ){
+					ck_selectorX  += 1;
+					if(ck_selectorX>3) ck_selectorX = 3;
+					// Clear the flag
+					ck_lastInput = 0;
+					ck_ControlPannelDrawn = false;
+				}
+				ck_localGameState.player_teams[0] = ck_selectorX;
+			}
+			US_TextX = 9; US_TextY = 13;
+			LK_US_PrintXYMenu("Use \1 \3 to");
+			US_TextX = 8; US_TextY = 14;
+			LK_US_PrintXYMenu("change option");
+
 		break;
 		case ck_CCharacter:
 			ck_selectorX = ck_localGameState.player_pics[0];
@@ -910,6 +1036,9 @@ void LK_US_DrawControlPannel(){
 
 		break;
 		case ck_CReconnect:
+			US_TextX = 8; US_TextY = 10;
+			LK_US_PrintXY("Reconnecting");
+
 			// Try to connect
 			GBA_RepairConnection();
 
