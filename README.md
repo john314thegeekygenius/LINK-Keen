@@ -46,3 +46,9 @@ Once the transfer is done, select Reconnect on both gameboys.
 To save space, all characters have been replaced with a palette swaped version of keen.
 
 
+# Assets
+
+You can now find the assets for this port here:
+https://github.com/john314thegeekygenius/LINK-Keen-Assets
+
+
